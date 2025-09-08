@@ -1,0 +1,72 @@
+[
+  {
+    "_id": "d55bbc67-58a4-498d-8b52-66b7ec8f1231",
+    "name": "development",
+    "key": "Dev",
+    "description": "",
+    "variables": {
+      "BASE_URL": "https://opensource-demo.orangehrmlive.com/web/index.php/admin/saveSystemUser",
+      "API_URL": "",
+      "USERNAME": "Admin",
+      "PASSWORD": "admin123",
+      "TIMEOUT": 30000,
+      "BROWSER": "chromium",
+      "HEADLESS": false,
+      "RETRIES": 1
+    },
+    "jiraIntegration": {
+      "enabled": false,
+      "url": "",
+      "username": "",
+      "password": "",
+      "projectKey": "",
+      "apiToken": ""
+    },
+    "llmConfiguration": {
+      "enabled": true,
+      "provider": "local",
+      "apiKey": "",
+      "model": "llama2",
+      "baseUrl": "http://localhost:11434/",
+      "llmProvider": "Ollama"
+    },
+    "createdAt": "2025-09-04T17:41:53.640Z",
+    "updatedAt": "2025-09-05T19:52:40.854Z",
+    "status": "active"
+  },
+  {
+    "_id": "99924982-205a-40be-8607-f932506cd3d5",
+    "name": "Test",
+    "key": "llm-test",
+    "description": "Environment for testing LLM code generation",
+    "variables": {
+      "BASE_URL": "https://practicetestautomation.com/practice-test-login/",
+      "API_URL": "",
+      "USERNAME": "student",
+      "PASSWORD": "Password123",
+      "TIMEOUT": "30000",
+      "BROWSER": "chromium",
+      "HEADLESS": false,
+      "RETRIES": 1
+    },
+    "jiraIntegration": {
+      "enabled": false,
+      "url": "",
+      "username": "",
+      "password": "",
+      "projectKey": "",
+      "apiToken": ""
+    },
+    "llmConfiguration": {
+      "enabled": true,
+      "provider": "openrouter",
+      "apiKey": "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",
+      "model": "deepseek/deepseek-chat-v3.1:free",
+      "baseUrl": "https://openrouter.ai",
+      "llmProvider": "OpenRouter"
+    },
+    "createdAt": "2025-09-04T18:07:35.071Z",
+    "updatedAt": "2025-09-07T16:47:24.996Z",
+    "status": "active"
+  }
+]

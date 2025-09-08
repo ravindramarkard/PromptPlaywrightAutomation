@@ -1,0 +1,119 @@
+[
+  {
+    "_id": "e73dce62-2252-4756-a3f6-23a0efc6f04b",
+    "name": "dfsd",
+    "description": "fdsf",
+    "testCases": [
+      "projects-default-project-models-default-model-generated-from-logintest"
+    ],
+    "type": "custom",
+    "status": "active",
+    "createdAt": "2025-09-07T18:16:06.944Z",
+    "updatedAt": "2025-09-07T18:16:06.944Z"
+  },
+  {
+    "_id": "4335ee3e-6136-4c2d-b554-17c08d0298e1",
+    "name": "all test",
+    "description": "alltest",
+    "tests": [
+      {
+        "_id": "e73dce62-2252-4756-a3f6-23a0efc6f04b",
+        "name": "dfsd",
+        "description": "fdsf",
+        "testCases": [
+          "projects-default-project-models-default-model-generated-from-logintest"
+        ],
+        "type": "custom",
+        "status": "active",
+        "createdAt": "2025-09-07T18:16:06.944Z",
+        "updatedAt": "2025-09-07T18:16:06.944Z"
+      },
+      {
+        "id": "projects-default-project-models-default-model-generated-from-logintest",
+        "name": "generated-from-logintest",
+        "description": "Generated test from projects/models",
+        "type": "UI Test",
+        "tags": [],
+        "project": "projects",
+        "model": "models",
+        "promptId": "default-model",
+        "filePath": "/Users/ravindramarkard/Desktop/latest Working Frameworks/ChatgptKindPrompt/tests/projects/default-project/models/default-model/Default Model/prompts/73b956bf-30a2-4972-a33f-d42c6803bc9b/generated-from-logintest.spec.ts",
+        "relativePath": "../tests/projects/default-project/models/default-model/Default Model/prompts/73b956bf-30a2-4972-a33f-d42c6803bc9b/generated-from-logintest.spec.ts",
+        "createdAt": "2025-09-07T17:56:57.338Z",
+        "updatedAt": "2025-09-07T17:56:57.338Z",
+        "status": "active",
+        "isGenerated": true,
+        "source": "Prompts"
+      },
+      {
+        "id": "projects-enhanced-ai-models-llm-generated-hr-login-test-fixed",
+        "name": "hr-login-test-fixed",
+        "description": "Generated test from projects/models",
+        "type": "HR Test",
+        "tags": [],
+        "project": "projects",
+        "model": "models",
+        "promptId": "llm-generated",
+        "filePath": "/Users/ravindramarkard/Desktop/latest Working Frameworks/ChatgptKindPrompt/tests/projects/enhanced-ai/models/llm-generated/LLM Generated/prompts/702b2324-291a-44c9-a272-7531abbf80db/hr-login-test-fixed.spec.ts",
+        "relativePath": "../tests/projects/enhanced-ai/models/llm-generated/LLM Generated/prompts/702b2324-291a-44c9-a272-7531abbf80db/hr-login-test-fixed.spec.ts",
+        "createdAt": "2025-09-05T21:55:52.586Z",
+        "updatedAt": "2025-09-05T21:55:52.586Z",
+        "status": "active",
+        "isGenerated": true,
+        "source": "Prompts"
+      },
+      {
+        "id": "projects-enhanced-ai-models-llm-generated-negative-login",
+        "name": "negative-login",
+        "description": "Generated test from projects/models",
+        "type": "Login Test",
+        "tags": [
+          "negative",
+          "login",
+          "ui"
+        ],
+        "project": "projects",
+        "model": "models",
+        "promptId": "llm-generated",
+        "filePath": "/Users/ravindramarkard/Desktop/latest Working Frameworks/ChatgptKindPrompt/tests/projects/enhanced-ai/models/llm-generated/LLM Generated/prompts/899904bd-1a7c-4a80-8022-ec47b64641b6/negative-login.spec.ts",
+        "relativePath": "../tests/projects/enhanced-ai/models/llm-generated/LLM Generated/prompts/899904bd-1a7c-4a80-8022-ec47b64641b6/negative-login.spec.ts",
+        "createdAt": "2025-09-07T17:36:27.174Z",
+        "updatedAt": "2025-09-07T17:36:27.174Z",
+        "status": "active",
+        "isGenerated": true,
+        "source": "Prompts"
+      },
+      {
+        "id": "projects-enhanced-ai-models-llm-generated-from-ench",
+        "name": "from-ench",
+        "description": "Generated test from projects/models",
+        "type": "Login Test",
+        "tags": [],
+        "project": "projects",
+        "model": "models",
+        "promptId": "llm-generated",
+        "filePath": "/Users/ravindramarkard/Desktop/latest Working Frameworks/ChatgptKindPrompt/tests/projects/enhanced-ai/models/llm-generated/LLM Generated/prompts/cc3b061d-8e20-42af-b504-7dc56a4edebc/from-ench.spec.ts",
+        "relativePath": "../tests/projects/enhanced-ai/models/llm-generated/LLM Generated/prompts/cc3b061d-8e20-42af-b504-7dc56a4edebc/from-ench.spec.ts",
+        "createdAt": "2025-09-07T15:50:02.021Z",
+        "updatedAt": "2025-09-07T15:50:02.021Z",
+        "status": "active",
+        "isGenerated": true,
+        "source": "Prompts"
+      }
+    ],
+    "testIds": [
+      null,
+      "projects-default-project-models-default-model-generated-from-logintest",
+      "projects-enhanced-ai-models-llm-generated-hr-login-test-fixed",
+      "projects-enhanced-ai-models-llm-generated-negative-login",
+      "projects-enhanced-ai-models-llm-generated-from-ench"
+    ],
+    "environment": "dev",
+    "tags": [
+      "custom"
+    ],
+    "status": "active",
+    "createdAt": "2025-09-07T18:54:31.501Z",
+    "updatedAt": "2025-09-07T18:54:31.501Z"
+  }
+]

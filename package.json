@@ -1,0 +1,43 @@
+{
+  "name": "ai-test-generator",
+  "version": "1.0.0",
+  "description": "AI-powered test generation platform using Playwright and Allure",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "test": "cd server && npm test",
+    "test:playwright": "cd server && npx playwright test",
+    "test:report": "cd server && npx allure serve allure-results"
+  },
+  "keywords": [
+    "testing",
+    "playwright",
+    "ai",
+    "automation",
+    "allure"
+  ],
+  "author": "Ravindra Markard",
+  "license": "Ravindra Markard",
+  "devDependencies": {
+    "@cucumber/cucumber": "^10.0.0",
+    "@playwright/test": "^1.40.0",
+    "allure-commandline": "^2.24.0",
+    "allure-playwright": "^3.3.3",
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.9.0",
+    "allure-playwright": "^3.3.3",
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.0",
+    "express": "^4.18.0",
+    "fs-extra": "^11.1.0",
+    "openai": "^4.0.0",
+    "playwright": "^1.55.0"
+  }
+}
