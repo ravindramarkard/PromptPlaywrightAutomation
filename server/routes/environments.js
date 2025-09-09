@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const FileStorage = require('../services/FileStorage');
+const LLMService = require('../services/LLMService');
 
 const fileStorage = new FileStorage();
+const llmService = new LLMService();
 
 // Get all environments
 router.get('/', async (req, res) => {
@@ -238,42 +240,20 @@ router.post('/test-llm-connection', async (req, res) => {
       });
     }
 
-    // Simulate LLM connection test based on provider
-    let isConnected = false;
-    let message = '';
+    // Use real LLM connection testing
+    console.log(`Testing LLM connection: ${provider} (${llmType})`);
+    
+    const isConnected = await llmService.testConnection(
+      provider,
+      llmType,
+      apiKey || '',
+      model || llmService.getDefaultModel(provider),
+      baseUrl || llmService.getDefaultBaseUrl(provider)
+    );
 
-    if (isLocal) {
-      // For local models, test if baseUrl is accessible
-      isConnected = baseUrl && baseUrl.startsWith('http');
-      message = isConnected ? `${provider} local model connection successful` : 'Invalid local model URL';
-    } else {
-      // For cloud providers, validate API key format
-      switch (provider.toLowerCase()) {
-        case 'openai':
-          isConnected = apiKey.startsWith('sk-') && apiKey.length > 20;
-          message = isConnected ? 'OpenAI connection successful' : 'Invalid OpenAI API key format';
-          break;
-        case 'claude':
-          isConnected = apiKey.startsWith('sk-ant-') && apiKey.length > 20;
-          message = isConnected ? 'Claude connection successful' : 'Invalid Claude API key format';
-          break;
-        case 'openrouter':
-          isConnected = apiKey.startsWith('sk-or-') && apiKey.length > 20;
-          message = isConnected ? 'OpenRouter connection successful' : 'Invalid OpenRouter API key format';
-          break;
-        default:
-          isConnected = false;
-          message = 'Unsupported provider';
-      }
-    }
-
-    // Add some randomness for demo purposes
-    if (isConnected) {
-      isConnected = Math.random() > 0.2; // 80% success rate
-      if (!isConnected) {
-        message = 'Connection test failed - service unavailable';
-      }
-    }
+    const message = isConnected 
+      ? `${provider} connection successful`
+      : `${provider} connection failed - please check your configuration`;
 
     res.json({
       success: isConnected,
@@ -281,10 +261,11 @@ router.post('/test-llm-connection', async (req, res) => {
       details: {
         provider,
         llmType: isLocal ? 'local' : 'cloud',
-        model: model || 'default',
-        baseUrl: baseUrl || 'N/A',
+        model: model || llmService.getDefaultModel(provider),
+        baseUrl: baseUrl || llmService.getDefaultBaseUrl(provider),
         apiKeyRequired: !isLocal,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        testType: 'real_connection'
       }
     });
   } catch (error) {

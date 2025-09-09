@@ -144,6 +144,18 @@ Please review and enhance this Playwright test code to make it more accurate, ro
 - ${includeAllureReport ? 'Use Playwright test.step() instead of allure APIs due to compatibility issues' : ''}
 - ${includeTestSteps ? 'Wrap each step in test.step() for better reporting (avoid allure.step due to API issues)' : ''}
 
+**CRITICAL SELECTOR FIXES - PREVENT ELEMENT AMBIGUITY:**
+- NEVER use getByText() for common text that appears multiple times (Dashboard, Home, Login, Submit, etc.)
+- ALWAYS use role-based selectors: getByRole('heading'), getByRole('button'), getByRole('link')
+- For form elements: use getByLabel(), getByPlaceholder(), or getByRole('textbox')
+- For navigation items: combine with parent containers like getByRole('navigation').getByText()
+- For repeated elements: use nth() selector or specific CSS selectors
+- Use data-testid when available: getByTestId('unique-id')
+- Combine selectors for specificity: locator('.container').getByRole('button')
+- For tables: use getByRole('cell') or getByRole('row') with specific text
+- Test each selector to ensure it matches exactly one element
+- Use browser dev tools to verify selector uniqueness before implementation
+
 **Output:**
 Return only the enhanced Playwright test code, no explanations or markdown formatting.`;
   }
@@ -191,7 +203,8 @@ Return only the enhanced Playwright test code, no explanations or markdown forma
       steps, 
       hasUI, 
       hasAPI,
-      options = {}
+      options = {},
+      tags = []
     } = config;
     
     let content = this.templates.imports;
@@ -212,9 +225,12 @@ Return only the enhanced Playwright test code, no explanations or markdown forma
       .replace('{{HEADLESS}}', headless)
       .replace('{{RETRIES}}', retries);
 
-    content += this.generateTestSteps(steps, hasUI, hasAPI, options);
+    content += this.generateTestSteps(steps, hasUI, hasAPI, { ...options, tags });
     
     content += this.templates.testTeardown;
+    
+    // CRITICAL: Fix ambiguous selectors that cause strict mode violations
+    content = this.fixAmbiguousSelectors(content);
     
     return content;
   }
@@ -225,10 +241,22 @@ Return only the enhanced Playwright test code, no explanations or markdown forma
       addTestDescription = true, 
       includeTestSteps = true,
       timeout = 90000,
-      baseUrl = 'http://localhost:3000'
+      baseUrl = 'http://localhost:3000',
+      tags = []
     } = options;
     
     let content = '';
+    
+    // Add beforeEach for allure tags
+    if (includeAllureReport && tags && tags.length > 0) {
+      content += '  test.beforeEach(async ({ page }) => {\n';
+      tags.forEach(tag => {
+        if (tag && tag.trim()) {
+          content += `    await allure.tag('${tag.trim()}');\n`;
+        }
+      });
+      content += '  });\n\n';
+    }
     
     // Add test method signature
     content += '  test(\'should execute test steps\', async ({ page';
@@ -241,11 +269,11 @@ Return only the enhanced Playwright test code, no explanations or markdown forma
     content += `    test.setTimeout(${timeout});\n`;
     content += '\n';
     
-    // Add test description if enabled (allure calls removed due to API compatibility)
+    // Add test description if enabled
     if (includeAllureReport && addTestDescription) {
-      content += '    // Test description: Automated test generated from AI prompt with ' + steps.length + ' steps\n';
-      content += '    // Severity: normal\n';
-      content += '    // Owner: AI Test Generator\n\n';
+      content += `    allure.description('Automated test generated from AI prompt with ${steps.length} steps');\n`;
+      content += `    allure.severity('normal');\n`;
+      content += `    allure.owner('AI Test Generator');\n\n`;
     }
     
     // Auto-navigate to base URL at test start
@@ -541,8 +569,7 @@ Return only the enhanced Playwright test code, no explanations or markdown forma
 
   getImportsTemplate() {
     return `import { test, expect } from '@playwright/test';
-// Note: allure-playwright import removed due to API compatibility issues
-// import { allure } from 'allure-playwright';
+import { allure } from 'allure-playwright';
 
 `;
   }
@@ -601,6 +628,46 @@ Return only the enhanced Playwright test code, no explanations or markdown forma
 });
 
 `;
+  }
+
+  fixAmbiguousSelectors(code) {
+    if (!code || typeof code !== 'string') {
+      return code;
+    }
+    
+    let fixedCode = code;
+    const fixes = [];
+    
+    // Fix Dashboard text selector - most common issue
+    const dashboardRegex = /getByText\(['"]Dashboard['"]\)/g;
+    if (dashboardRegex.test(fixedCode)) {
+      fixedCode = fixedCode.replace(dashboardRegex, "getByRole('heading', { name: 'Dashboard' })");
+      fixes.push('Dashboard text selector');
+    }
+    
+    // Fix other common ambiguous text selectors
+    const commonAmbiguousTexts = [
+      { pattern: /getByText\(['"]Home['"]\)/g, replacement: "getByRole('link', { name: 'Home' })" },
+      { pattern: /getByText\(['"]Login['"]\)/g, replacement: "getByRole('button', { name: 'Login' })" },
+      { pattern: /getByText\(['"]Submit['"]\)/g, replacement: "getByRole('button', { name: 'Submit' })" },
+      { pattern: /getByText\(['"]Save['"]\)/g, replacement: "getByRole('button', { name: 'Save' })" },
+      { pattern: /getByText\(['"]Cancel['"]\)/g, replacement: "getByRole('button', { name: 'Cancel' })" },
+      { pattern: /getByText\(['"]Settings['"]\)/g, replacement: "getByRole('link', { name: 'Settings' })" },
+      { pattern: /getByText\(['"]Profile['"]\)/g, replacement: "getByRole('link', { name: 'Profile' })" }
+    ];
+    
+    commonAmbiguousTexts.forEach(({ pattern, replacement }) => {
+      if (pattern.test(fixedCode)) {
+        fixedCode = fixedCode.replace(pattern, replacement);
+        fixes.push(pattern.source.match(/getByText\\\\\(['\"]([^'\"]+)['\"]\\\\\)/)?.[1] || 'text selector');
+      }
+    });
+    
+    if (fixes.length > 0) {
+      console.log('Applied selector fixes for:', fixes.join(', '));
+    }
+    
+    return fixedCode;
   }
 
   getHelperFunctions() {
@@ -672,9 +739,10 @@ async function handleTestCleanup(page, testInfo) {
   generateFilePath(projectId, modelId, modelName, promptId, testName) {
     const safeTestName = testName || 'Generated Test';
     const sanitizedTestName = safeTestName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+    const sanitizedModelName = modelName.replace(/[^a-zA-Z0-9-_]/g, '-');
     // Return absolute path to project root tests directory
     const projectRoot = path.resolve(__dirname, '../..');
-    const fullPath = path.join(projectRoot, 'tests/projects', projectId, 'models', modelId, modelName, 'prompts', promptId, `${sanitizedTestName}.spec.ts`);
+    const fullPath = path.join(projectRoot, 'tests/projects', projectId, 'models', modelId, sanitizedModelName, 'prompts', promptId, `${sanitizedTestName}.spec.ts`);
     console.log('Generated file path:', fullPath);
     console.log('Project root:', projectRoot);
     console.log('__dirname:', __dirname);

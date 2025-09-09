@@ -206,7 +206,7 @@ const TestsTable = styled.div`
 
 const TableHeader = styled.div`
   display: grid;
-  grid-template-columns: 40px 1fr 200px 100px 120px 100px;
+  grid-template-columns: 40px 1fr 200px 100px 120px 150px 100px;
   gap: 16px;
   padding: 16px 20px;
   background-color: #f8f9fa;
@@ -220,7 +220,7 @@ const TableHeader = styled.div`
 
 const TableRow = styled.div`
   display: grid;
-  grid-template-columns: 40px 1fr 200px 100px 120px 100px;
+  grid-template-columns: 40px 1fr 200px 100px 120px 150px 100px;
   gap: 16px;
   padding: 16px 20px;
   border-bottom: 1px solid #ecf0f1;
@@ -579,17 +579,29 @@ const TestSuiteManagement = () => {
       setLoading(true);
       const allTests = [];
       
+      // Fetch all prompts first to get the correct tags and types
+      const promptsResponse = await api.get('/prompts');
+      const promptsMap = new Map();
+      if (promptsResponse.data && promptsResponse.data.prompts) {
+        promptsResponse.data.prompts.forEach(prompt => {
+          promptsMap.set(prompt._id, prompt);
+        });
+      }
+      
       // Fetch all generated tests from test-suites endpoint
       const testSuitesResponse = await api.get('/test-suites');
       if (testSuitesResponse.data && testSuitesResponse.data.testSuites) {
         testSuitesResponse.data.testSuites.forEach(testSuite => {
+          // Get the original prompt to fetch correct tags and type
+          const originalPrompt = promptsMap.get(testSuite.promptId);
+          
           allTests.push({
             id: testSuite.id,
             name: testSuite.name,
             promptId: testSuite.promptId,
             projectModel: testSuite.model || 'Default Model',
-            type: testSuite.type ? testSuite.type.toLowerCase() : 'unknown',
-            tags: testSuite.tags || [],
+            type: originalPrompt ? originalPrompt.testType.toLowerCase() : (testSuite.type ? testSuite.type.toLowerCase() : 'unknown'),
+            tags: originalPrompt ? (originalPrompt.tags || []) : (testSuite.tags || []),
             createdAt: testSuite.createdAt,
             filePath: testSuite.filePath,
             status: 'ready',
@@ -601,7 +613,6 @@ const TestSuiteManagement = () => {
       }
       
       // Also fetch tests from prompts (for backward compatibility)
-      const promptsResponse = await api.get('/prompts');
       if (promptsResponse.data && promptsResponse.data.prompts) {
         promptsResponse.data.prompts.forEach(prompt => {
           if (prompt.generatedTests && prompt.generatedTests.length > 0) {
@@ -900,19 +911,24 @@ const TestSuiteManagement = () => {
   };
 
   const getFilteredTests = () => {
+    let filtered;
     if (activeFilter === 'all') {
-      return tests;
+      filtered = tests;
+    } else {
+      filtered = tests.filter(test => {
+        const testType = test.type.toLowerCase();
+        if (activeFilter === 'ui') {
+          return testType === 'ui test' || testType === 'ui';
+        }
+        if (activeFilter === 'api') {
+          return testType === 'api test' || testType === 'api';
+        }
+        return testType === activeFilter;
+      });
     }
-    return tests.filter(test => {
-      const testType = test.type.toLowerCase();
-      if (activeFilter === 'ui') {
-        return testType === 'ui test' || testType === 'ui';
-      }
-      if (activeFilter === 'api') {
-        return testType === 'api test' || testType === 'api';
-      }
-      return testType === activeFilter;
-    });
+    
+    // Sort by latest created first (newest to oldest)
+    return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   };
 
   const filteredTests = getFilteredTests();
@@ -1078,6 +1094,7 @@ const TestSuiteManagement = () => {
                     <div>Project Model</div>
                     <div>Type</div>
                     <div>Tags</div>
+                    <div>Created Timestamp</div>
                     <div>Actions</div>
                   </TableHeader>
                   
@@ -1101,6 +1118,15 @@ const TestSuiteManagement = () => {
                           <Tag key={index}>{tag}</Tag>
                         ))}
                       </Tags>
+                      <div style={{ fontSize: '12px', color: '#7f8c8d' }}>
+                        {new Date(test.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
                       <Actions>
                         <ActionButton
                           onClick={() => handleRunTest(test.id)}

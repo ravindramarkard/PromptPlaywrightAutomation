@@ -239,7 +239,9 @@ const ToggleLabel = styled.label`
   margin: 0;
 `;
 
-const ToggleButton = styled.button`
+const ToggleButton = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== 'enabled'
+})`
   width: 50px;
   height: 24px;
   border-radius: 12px;
@@ -544,40 +546,31 @@ const EnhancedAIGenerator = () => {
         parsedSteps: stepsToSend
       });
       
-      let response;
-      if (formData.useLLM && environment) {
-        // Use direct LLM generation
-        response = await api.post('/code-generation/generate-llm-playwright', {
-          promptContent: formData.promptContent,
-          testName: formData.testName,
-          testType: formData.testType,
-          environment: environment, // Pass the full environment object
-          parsedSteps: stepsToSend // Send parsed steps to LLM
-        });
-      } else {
-        // Use template-based generation
-        response = await api.post('/code-generation/generate-playwright', {
-          promptContent: formData.promptContent,
-          testName: formData.testName,
-          testType: formData.testType,
-          environment: environment, // Pass the full environment object
-          useLLM: formData.useLLM,
-          parsedSteps: stepsToSend, // Send parsed steps to LLM
-          options: formData.options
-        });
+      // Enforce LLM generation for Enhanced Test - no template fallback allowed
+      if (!environment) {
+        toast.error('Please select an LLM environment to generate enhanced tests');
+        return;
       }
       
+      console.log('Enforcing direct LLM generation for Enhanced Test');
+      
+      // Always use direct LLM generation for Enhanced Test button
+      const response = await api.post('/code-generation/generate-llm-playwright', {
+        promptContent: formData.promptContent,
+        testName: formData.testName,
+        testType: formData.testType,
+        environment: environment, // Pass the full environment object
+        parsedSteps: stepsToSend // Send parsed steps to LLM
+      });
+      
       setGeneratedCode(response.data.testCode);
-      const generationMethod = response.data.metadata?.generatedWith || 'Template';
-      const llmProvider = environment?.llmConfiguration?.provider || 'Template';
+      const generationMethod = response.data.metadata?.generatedWith || 'LLM';
+      const llmProvider = environment?.llmConfiguration?.provider || 'LLM';
       const stepCount = stepsToSend.length;
       const browserLaunch = response.data.browserLaunch;
       
-      if (formData.useLLM) {
-        toast.success(`🤖 ${generationMethod} code generated using ${llmProvider} with ${stepCount} parsed steps`);
-      } else {
-        toast.success(`⚡ ${generationMethod} code generated using template approach`);
-      }
+      // Always show LLM success message since we enforce LLM generation
+      toast.success(`🤖 ${generationMethod} code generated using ${llmProvider} with ${stepCount} parsed steps`);
       
       // Handle browser launch result
       if (browserLaunch) {
