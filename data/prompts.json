@@ -303,5 +303,372 @@
     },
     "createdAt": "2025-09-07T15:47:31.978Z",
     "updatedAt": "2025-09-07T15:47:31.978Z"
+  },
+  {
+    "_id": "f6c93706-9165-4b03-85c7-1532dd312166",
+    "title": "Fix Dashboard Element Ambiguity",
+    "description": "Fix Playwright strict mode violation where getByText(\"Dashboard\") resolves to 2 elements",
+    "promptContent": "Create a Playwright test for OrangeHRM login that fixes the strict mode violation error. The error occurs because getByText(\"Dashboard\") resolves to 2 elements: 1) a span with class oxd-main-menu-item--name and 2) an h6 with class oxd-topbar-header-breadcrumb-module. Use more specific selectors like getByRole(\"heading\", { name: \"Dashboard\" }) to target the correct Dashboard heading element. Navigate to https://opensource-demo.orangehrmlive.com/web/index.php/auth/login, login with Admin/admin123, and verify successful login by checking for the Dashboard heading (not the menu item). Make the test robust with proper wait conditions and error handling. Avoid using getByText(\"Dashboard\") directly - use more specific role-based selectors instead.",
+    "testType": "UI Test",
+    "tags": [
+      "playwright",
+      "orangehrm",
+      "login",
+      "dashboard",
+      "strict-mode-fix"
+    ],
+    "projectId": "default-project",
+    "modelId": "default-model",
+    "modelName": "Default Model",
+    "promptId": "a2be11aa-7792-460b-903d-c9ba6b782680",
+    "status": "draft",
+    "generatedTests": [],
+    "metadata": {
+      "parsedSteps": [
+        {
+          "stepNumber": 1,
+          "originalText": "Create a Playwright test for OrangeHRM login that fixes the strict mode violation error. The error occurs because getByText(\"Dashboard\") resolves to 2 elements: 1) a span with class oxd-main-menu-item--name and 2) an h6 with class oxd-topbar-header-breadcrumb-module. Use more specific selectors like getByRole(\"heading\", { name: \"Dashboard\" }) to target the correct Dashboard heading element. Navigate to https://opensource-demo.orangehrmlive.com/web/index.php/auth/login, login with Admin/admin123, and verify successful login by checking for the Dashboard heading (not the menu item). Make the test robust with proper wait conditions and error handling. Avoid using getByText(\"Dashboard\") directly - use more specific role-based selectors instead.",
+          "action": "navigate",
+          "target": "[data-testid=\"using\"]",
+          "value": null,
+          "assertion": "successful login by checking for the Dashboard heading (not the menu item). Make the test robust with proper wait conditions and error handling. Avoid using getByText(\"Dashboard\") directly - use more specific role-based selectors instead.",
+          "waitTime": null
+        }
+      ],
+      "timestamp": "2025-09-09T20:06:41.560Z"
+    },
+    "createdAt": "2025-09-09T20:06:41.561Z",
+    "updatedAt": "2025-09-09T20:06:41.561Z"
+  },
+  {
+    "_id": "1119072c-fedf-4ad9-be90-6a19367a4868",
+    "title": "API -test",
+    "description": "test",
+    "promptContent": "Test",
+    "testType": "API Test",
+    "tags": [
+      "smoke"
+    ],
+    "additionalContext": "",
+    "baseUrl": "http://test@gmail.com",
+    "additionalInformation": "",
+    "projectId": "default-project",
+    "modelId": "default-model",
+    "modelName": "Default Model",
+    "promptId": "718ed8a9-5e5d-4326-a5bd-5843a7bb6104",
+    "status": "draft",
+    "generatedTests": [],
+    "metadata": {
+      "parsedSteps": [
+        {
+          "stepNumber": 1,
+          "originalText": "Test",
+          "action": "unknown",
+          "target": "Test",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        }
+      ],
+      "timestamp": "2025-09-09T21:03:30.254Z"
+    },
+    "createdAt": "2025-09-09T21:03:30.254Z",
+    "updatedAt": "2025-09-09T21:03:30.254Z"
+  },
+  {
+    "_id": "39b02020-6241-4025-995e-7cbeb7afe29b",
+    "title": "facebook",
+    "description": "facebook",
+    "promptContent": "Go to facebook\nEnter invalid email id\nEnter invalid password\nTest invalid login for face book\nclose the browser",
+    "testType": "UI Test",
+    "tags": [
+      "smoke"
+    ],
+    "additionalContext": "https://www.facebook.com/login/",
+    "baseUrl": "",
+    "additionalInformation": "",
+    "projectId": "default-project",
+    "modelId": "default-model",
+    "modelName": "Default Model",
+    "promptId": "f881d964-25a2-4891-a1e4-9d8caa4b3088",
+    "status": "draft",
+    "generatedTests": [],
+    "metadata": {
+      "parsedSteps": [
+        {
+          "stepNumber": 1,
+          "originalText": "Go to facebook",
+          "action": "navigate",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 2,
+          "originalText": "Enter invalid email id",
+          "action": "fill",
+          "target": "[data-testid=\"email\"]",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 3,
+          "originalText": "Enter invalid password",
+          "action": "fill",
+          "target": "[data-testid=\"password\"]",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 4,
+          "originalText": "Test invalid login for face book",
+          "action": "unknown",
+          "target": "[data-testid=\"login\"]",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 5,
+          "originalText": "close the browser",
+          "action": "upload",
+          "target": "table",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        }
+      ],
+      "timestamp": "2025-09-09T21:06:40.327Z"
+    },
+    "createdAt": "2025-09-09T21:06:40.328Z",
+    "updatedAt": "2025-09-09T21:06:40.328Z"
+  },
+  {
+    "_id": "85d67614-ddc9-4309-895c-062ed8ad9f99",
+    "title": "Postive and Negative Login test",
+    "description": "Postive and Negative Login test",
+    "promptContent": "Test case 1: Negative username test\nOpen page\nType username incorrectUser into Username field\nType password Password123 into Password field\nPush Submit button\nVerify error message is displayed\nVerify error message text is Your username is invalid!\n\nTest case 2: Negative password test\nOpen page\nType username student into Username field\nType password incorrectPassword into Password field\nPush Submit button\nVerify error message is displayed\nVerify error message text is Your password is invalid!\n\nTest case 1: Positive LogIn test\nOpen page\nType username student into Username field\nType password Password123 into Password field\nPush Submit button\nVerify new page URL contains practicetestautomation.com/logged-in-successfully/\nVerify new page contains expected text ('Congratulations' or 'successfully logged in')\nVerify button Log out is displayed on the new page\n",
+    "testType": "UI Test",
+    "tags": [
+      "smoke",
+      "regression"
+    ],
+    "additionalContext": "",
+    "baseUrl": "https://practicetestautomation.com/practice-test-login/",
+    "additionalInformation": "",
+    "projectId": "default-project",
+    "modelId": "default-model",
+    "modelName": "Default Model",
+    "promptId": "cab864e6-d2e4-4a04-8a60-dfa86fc53eec",
+    "status": "draft",
+    "generatedTests": [],
+    "metadata": {
+      "parsedSteps": [
+        {
+          "stepNumber": 1,
+          "originalText": "Test case 1: Negative username test",
+          "action": "unknown",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 2,
+          "originalText": "Open page",
+          "action": "navigate",
+          "target": "page",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 3,
+          "originalText": "Type username incorrectUser into Username field",
+          "action": "fill",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 4,
+          "originalText": "Type password Password123 into Password field",
+          "action": "fill",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 5,
+          "originalText": "Push Submit button",
+          "action": "unknown",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 6,
+          "originalText": "Verify error message is displayed",
+          "action": "assert",
+          "target": "error message displayed",
+          "value": null,
+          "assertion": "error message is displayed",
+          "waitTime": null
+        },
+        {
+          "stepNumber": 7,
+          "originalText": "Verify error message text is Your username is invalid!",
+          "action": "assert",
+          "target": "input",
+          "value": null,
+          "assertion": "error message text is Your username is invalid!",
+          "waitTime": null
+        },
+        {
+          "stepNumber": 8,
+          "originalText": "Test case 2: Negative password test",
+          "action": "unknown",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 9,
+          "originalText": "Open page",
+          "action": "navigate",
+          "target": "page",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 10,
+          "originalText": "Type username student into Username field",
+          "action": "fill",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 11,
+          "originalText": "Type password incorrectPassword into Password field",
+          "action": "fill",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 12,
+          "originalText": "Push Submit button",
+          "action": "unknown",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 13,
+          "originalText": "Verify error message is displayed",
+          "action": "assert",
+          "target": "error message displayed",
+          "value": null,
+          "assertion": "error message is displayed",
+          "waitTime": null
+        },
+        {
+          "stepNumber": 14,
+          "originalText": "Verify error message text is Your password is invalid!",
+          "action": "assert",
+          "target": "input",
+          "value": null,
+          "assertion": "error message text is Your password is invalid!",
+          "waitTime": null
+        },
+        {
+          "stepNumber": 15,
+          "originalText": "Test case 1: Positive LogIn test",
+          "action": "unknown",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 16,
+          "originalText": "Open page",
+          "action": "navigate",
+          "target": "page",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 17,
+          "originalText": "Type username student into Username field",
+          "action": "fill",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 18,
+          "originalText": "Type password Password123 into Password field",
+          "action": "fill",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 19,
+          "originalText": "Push Submit button",
+          "action": "unknown",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 20,
+          "originalText": "Verify new page URL contains practicetestautomation.com/logged-in-successfully/",
+          "action": "assert",
+          "target": "new page URL contains practicetestautomation.com/logged-in-successfully/",
+          "value": null,
+          "assertion": "new page URL contains practicetestautomation.com/logged-in-successfully/",
+          "waitTime": null
+        },
+        {
+          "stepNumber": 21,
+          "originalText": "Verify new page contains expected text ('Congratulations' or 'successfully logged in')",
+          "action": "assert",
+          "target": "text",
+          "value": null,
+          "assertion": "new page contains expected text ('Congratulations' or 'successfully logged in')",
+          "waitTime": null
+        },
+        {
+          "stepNumber": 22,
+          "originalText": "Verify button Log out is displayed on the new page",
+          "action": "assert",
+          "target": "button",
+          "value": null,
+          "assertion": "button Log out is displayed on the new page",
+          "waitTime": null
+        }
+      ],
+      "timestamp": "2025-09-09T21:09:09.651Z"
+    },
+    "createdAt": "2025-09-09T21:09:09.651Z",
+    "updatedAt": "2025-09-09T21:09:09.651Z"
   }
 ]

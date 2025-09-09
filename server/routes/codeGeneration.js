@@ -21,16 +21,98 @@ function cleanGeneratedCode(rawCode) {
   // Remove any leading/trailing whitespace
   cleaned = cleaned.trim();
   
+  // CRITICAL: Fix ambiguous selectors that cause strict mode violations
+  cleaned = fixAmbiguousSelectors(cleaned);
+  
   // Remove any explanatory text before the first import
   const importIndex = cleaned.indexOf('import {');
   if (importIndex > 0) {
     cleaned = cleaned.substring(importIndex);
   }
   
+  // Fix async/await syntax issues in callback functions
+  // Replace await inside non-async callbacks with proper async syntax
+  cleaned = cleaned.replace(
+    /(allure\.createStep\([^,]+,\s*)\(\)\s*=>\s*{([^}]*await[^}]*)}/g,
+    '$1async () => {$2}'
+  );
+  
+  // Fix other common callback patterns with await
+  cleaned = cleaned.replace(
+    /(\w+\.\w+\([^,]*,\s*)\(([^)]*)\)\s*=>\s*{([^}]*await[^}]*)}/g,
+    '$1async ($2) => {$3}'
+  );
+  
+  // Remove explanatory text after the last closing brace
+  // Find the last occurrence of }); which typically ends a test file
+  const lastTestEnd = cleaned.lastIndexOf('});');
+  if (lastTestEnd > 0) {
+    // Look for any explanatory text after the last test
+    const afterLastTest = cleaned.substring(lastTestEnd + 3).trim();
+    if (afterLastTest.includes('Explanation:') || afterLastTest.includes('*') || afterLastTest.includes('The `')) {
+      cleaned = cleaned.substring(0, lastTestEnd + 3);
+    }
+  }
+  
+  // Remove any lines that start with explanatory markers
+  const lines = cleaned.split('\n');
+  const filteredLines = lines.filter(line => {
+    const trimmed = line.trim();
+    return !trimmed.startsWith('Explanation:') && 
+           !trimmed.startsWith('* The `') && 
+           !trimmed.startsWith('*') ||
+           trimmed.startsWith('* @') || // Keep JSDoc comments
+           trimmed.startsWith('*/') ||  // Keep JSDoc end
+           trimmed.startsWith('/**');   // Keep JSDoc start
+  });
+  
+  cleaned = filteredLines.join('\n');
+  
   // Ensure proper line endings
   cleaned = cleaned.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   
-  return cleaned;
+  return cleaned.trim();
+}
+
+// Fix ambiguous selectors that cause strict mode violations
+function fixAmbiguousSelectors(code) {
+  if (!code || typeof code !== 'string') {
+    return code;
+  }
+  
+  let fixedCode = code;
+  const fixes = [];
+  
+  // Fix Dashboard text selector - most common issue
+  const dashboardRegex = /getByText\(['"]Dashboard['"]\)/g;
+  if (dashboardRegex.test(fixedCode)) {
+    fixedCode = fixedCode.replace(dashboardRegex, "getByRole('heading', { name: 'Dashboard' })");
+    fixes.push('Dashboard text selector');
+  }
+  
+  // Fix other common ambiguous text selectors
+  const commonAmbiguousTexts = [
+    { pattern: /getByText\(['"]Home['"]\)/g, replacement: "getByRole('link', { name: 'Home' })" },
+    { pattern: /getByText\(['"]Login['"]\)/g, replacement: "getByRole('button', { name: 'Login' })" },
+    { pattern: /getByText\(['"]Submit['"]\)/g, replacement: "getByRole('button', { name: 'Submit' })" },
+    { pattern: /getByText\(['"]Save['"]\)/g, replacement: "getByRole('button', { name: 'Save' })" },
+    { pattern: /getByText\(['"]Cancel['"]\)/g, replacement: "getByRole('button', { name: 'Cancel' })" },
+    { pattern: /getByText\(['"]Settings['"]\)/g, replacement: "getByRole('link', { name: 'Settings' })" },
+    { pattern: /getByText\(['"]Profile['"]\)/g, replacement: "getByRole('link', { name: 'Profile' })" }
+  ];
+  
+  commonAmbiguousTexts.forEach(({ pattern, replacement }) => {
+    if (pattern.test(fixedCode)) {
+      fixedCode = fixedCode.replace(pattern, replacement);
+      fixes.push(pattern.source.match(/getByText\\\(['\"]([^'\"]+)['\"]\\\)/)?.[1] || 'text selector');
+    }
+  });
+  
+  if (fixes.length > 0) {
+    console.log('Applied selector fixes for:', fixes.join(', '));
+  }
+  
+  return fixedCode;
 }
 
 // Helper function to launch browser test
@@ -57,15 +139,18 @@ function launchBrowserTest(testFilePath, environment) {
       };
       
       // Launch Playwright test with headed mode
+      // Quote the path to handle spaces in directory names
+      const quotedPath = `"${relativePath}"`;
       const playwrightProcess = spawn('npx', [
         'playwright',
         'test',
-        relativePath,
+        quotedPath,
         '--headed'
       ], {
         cwd: projectRoot,
         env,
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
+        shell: true // Enable shell to handle quoted paths properly
       });
       
       let output = '';
@@ -170,7 +255,9 @@ router.post('/generate-llm-playwright', async (req, res) => {
       testType,
       environment: environment.name,
       stepCount: parsedSteps.length,
-      llmConfig: environment.llmConfiguration
+      llmConfig: environment.llmConfiguration,
+      promptContentLength: promptContent?.length || 0,
+      promptContentPreview: promptContent?.substring(0, 100) + '...'
     });
 
     // Create a comprehensive prompt for the LLM
@@ -198,6 +285,17 @@ Create a complete TypeScript Playwright test file with:
 - Wait conditions: use page.waitForSelector() for element visibility
 - Meaningful assertions: verify the test outcome
 
+IMPORTANT SELECTOR RULES - AVOID ELEMENT AMBIGUITY:
+- NEVER use getByText() for any text that might appear multiple times on a page
+- Common ambiguous texts: Dashboard, Home, Login, Submit, Save, Cancel, Edit, Delete, Search, Filter
+- ALWAYS use role-based selectors: getByRole('heading'), getByRole('button'), getByRole('link')
+- For form elements: use getByLabel(), getByPlaceholder(), or getByRole('textbox')
+- For navigation: use getByRole('navigation').getByText() or specific CSS selectors
+- For repeated elements: use nth() selector or combine with parent containers
+- For dynamic content: use data-testid attributes or unique CSS class selectors
+- Verify selector uniqueness: each selector should match exactly one element
+- Use browser dev tools to test selector specificity during development
+
 Return ONLY the complete TypeScript code without explanations or markdown.`;
 
     // Generate code using LLM
@@ -217,10 +315,8 @@ Return ONLY the complete TypeScript code without explanations or markdown.`;
       }
     };
     
-    let testCode;
-    try {
-      // Use the proper LLMService approach with system and user prompts
-      const systemPrompt = `You are an expert Playwright test automation engineer. Generate high-quality, production-ready Playwright test code based on user requirements.
+    // Use the proper LLMService approach with system and user prompts - NO FALLBACK
+    const systemPrompt = `You are an expert Playwright test automation engineer. Generate high-quality, production-ready Playwright test code based on user requirements.
 
 REQUIREMENTS:
 - Use TypeScript with Playwright
@@ -236,49 +332,50 @@ REQUIREMENTS:
 - Add proper test cleanup in afterEach
 - Include Allure tags and attachments
 
+CRITICAL SELECTOR RULES - PREVENT ELEMENT AMBIGUITY:
+- NEVER use getByText() for common text that appears multiple times (Dashboard, Home, Login, Submit, Save, Cancel, Edit, Delete)
+- ALWAYS use role-based selectors to avoid strict mode violations:
+  * For headings: page.getByRole('heading', { name: 'Text' })
+  * For buttons: page.getByRole('button', { name: 'Text' })
+  * For links: page.getByRole('link', { name: 'Text' })
+  * For form inputs: page.getByLabel('Label') or page.getByPlaceholder('Placeholder')
+- For navigation items: use page.getByRole('navigation').getByText('Item')
+- For repeated elements: use nth() selector or combine with parent containers
+- Use data-testid when available: page.getByTestId('unique-id')
+- Combine selectors for specificity: page.locator('.container').getByRole('button', { name: 'Text' })
+- For tables: use page.getByRole('cell', { name: 'Text' }) or page.getByRole('row')
+- Test selector uniqueness: ensure each selector matches exactly one element
+
 Return ONLY the complete TypeScript test file code without any explanations or markdown formatting.`;
 
-      const userPrompt = llmPrompt;
-      
-      const rawCode = await llmService.generateCode(userPrompt, fixedEnvironment, {
-        systemPrompt,
-        testName,
-        testType,
-        baseUrl: environment.variables?.BASE_URL || 'http://localhost:3000',
-        environment: fixedEnvironment
-      });
-      
-      // Clean the generated code
-      testCode = cleanGeneratedCode(rawCode);
-    } catch (llmError) {
-      console.warn('LLM generation failed, falling back to template generation:', llmError.message);
-      
-      // Fallback to template generation
-      const CodeGenerator = require('../services/CodeGenerator');
-      const codeGenerator = new CodeGenerator();
-      
-      // Parse the prompt for template generation
-      const PromptParser = require('../services/PromptParser');
-      const promptParser = new PromptParser();
-      const parsedPrompt = promptParser.parsePrompt(promptContent);
-      
-      testCode = await codeGenerator.generatePlaywrightSpec(
-        parsedPrompt,
-        environment,
-        {
-          testName: testName || 'Generated Test',
-          testType,
-          useLLM: false,
-          parsedSteps: parsedSteps || parsedPrompt.parsedSteps
-        }
-      );
+    const userPrompt = llmPrompt;
+    
+    console.log('Enforcing direct LLM generation - no fallback to templates');
+    
+    // Generate code using LLM - throw error if it fails (no fallback)
+    const rawCode = await llmService.generateCode(userPrompt, fixedEnvironment, {
+      systemPrompt,
+      testName,
+      testType,
+      baseUrl: environment.variables?.BASE_URL || 'http://localhost:3000',
+      environment: fixedEnvironment
+    });
+    
+    // Clean the generated code
+    const testCode = cleanGeneratedCode(rawCode);
+    
+    // Validate that we actually got code from LLM
+    if (!testCode || testCode.trim().length === 0) {
+      throw new Error('LLM generated empty or invalid code. Please check your LLM configuration and try again.');
     }
+    
+    console.log('LLM code generation successful, proceeding with test execution');
 
     // Generate file path for saving
     const filePath = codeGenerator.generateFilePath(
       'enhanced-ai',
       'llm-generated',
-      'LLM Generated',
+      'LLM-Generated',
       uuidv4(),
       testName
     );
@@ -982,9 +1079,7 @@ Return ONLY the complete TypeScript code without explanations or markdown.`;
       }
     };
     
-    let testCode;
-    try {
-      const systemPrompt = `You are an expert Playwright test automation engineer. Generate high-quality, production-ready Playwright test code based on user requirements.
+    const systemPrompt = `You are an expert Playwright test automation engineer. Generate high-quality, production-ready Playwright test code based on user requirements.
 
 REQUIREMENTS:
 - Use TypeScript with Playwright
@@ -1002,46 +1097,36 @@ REQUIREMENTS:
 
 Return ONLY the complete TypeScript test file code without any explanations or markdown formatting.`;
 
-      const userPrompt = llmPrompt;
-      
-      const rawCode = await llmService.generateCode(userPrompt, fixedEnvironment, {
-        systemPrompt,
-        testName,
-        testType,
-        baseUrl: environment.variables?.BASE_URL || 'http://localhost:3000',
-        environment: fixedEnvironment
-      });
-      
-      // Clean the generated code
-      testCode = cleanGeneratedCode(rawCode);
-    } catch (llmError) {
-      console.warn('LLM generation failed, falling back to template generation:', llmError.message);
-      
-      // Fallback to template generation
-      const CodeGenerator = require('../services/CodeGenerator');
-      const codeGenerator = new CodeGenerator();
-      
-      const PromptParser = require('../services/PromptParser');
-      const promptParser = new PromptParser();
-      const parsedPrompt = promptParser.parsePrompt(promptContent);
-      
-      testCode = await codeGenerator.generatePlaywrightSpec(
-        parsedPrompt,
-        environment,
-        {
-          testName: testName || 'Generated Test',
-          testType,
-          useLLM: false,
-          parsedSteps: parsedSteps || parsedPrompt.parsedSteps
-        }
-      );
+    const userPrompt = llmPrompt;
+    
+    console.log('Enforcing direct LLM generation - no fallback to templates');
+    
+    const rawCode = await llmService.generateCode(userPrompt, fixedEnvironment, {
+      systemPrompt,
+      testName,
+      testType,
+      baseUrl: environment.variables?.BASE_URL || 'http://localhost:3000',
+      environment: fixedEnvironment
+    });
+    
+    // Clean the generated code
+    const testCode = cleanGeneratedCode(rawCode);
+    
+    // Validate that we actually got code from LLM
+    if (!testCode || testCode.trim().length === 0) {
+      throw new Error('LLM generated empty or invalid code. Please check your LLM configuration and try again.');
     }
+    
+    console.log('LLM code generation successful, proceeding with test execution');
 
     // Generate file path for saving
+    const CodeGenerator = require('../services/CodeGenerator');
+    const codeGenerator = new CodeGenerator();
+    
     const filePath = codeGenerator.generateFilePath(
       'enhanced-ai',
       'llm-generated',
-      'LLM Generated',
+      'LLM-Generated',
       uuidv4(),
       testName
     );

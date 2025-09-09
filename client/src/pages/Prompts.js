@@ -50,8 +50,8 @@ const ViewToggle = styled.div`
 const ViewToggleButton = styled.button`
   padding: 8px 12px;
   border: none;
-  background: ${props => props.active ? '#3498db' : 'transparent'};
-  color: ${props => props.active ? 'white' : '#7f8c8d'};
+  background: ${props => props.$active ? '#3498db' : 'transparent'};
+  color: ${props => props.$active ? 'white' : '#7f8c8d'};
   border-radius: 4px;
   cursor: pointer;
   display: flex;
@@ -62,8 +62,8 @@ const ViewToggleButton = styled.button`
   transition: all 0.3s ease;
   
   &:hover {
-    background: ${props => props.active ? '#2980b9' : '#d5dbdb'};
-    color: ${props => props.active ? 'white' : '#2c3e50'};
+    background: ${props => props.$active ? '#2980b9' : '#d5dbdb'};
+    color: ${props => props.$active ? 'white' : '#2c3e50'};
   }
 `;
 
@@ -454,6 +454,49 @@ const EnvModalActions = styled.div`
   gap: 12px;
 `;
 
+const LoadingMessage = styled.div`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 1002;
+  animation: slideIn 0.3s ease-out;
+  
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+`;
+
+const LoadingSpinner = styled.div`
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
 const Prompts = () => {
   const [prompts, setPrompts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -535,13 +578,13 @@ const Prompts = () => {
       
       let response;
       if (selectedEnvironment) {
-        // Use generate-and-run endpoint for LLM generation and immediate execution
-        response = await api.post('/code-generation/generate-and-run', {
+        // Use generate-llm-playwright endpoint for LLM generation
+        response = await api.post('/code-generation/generate-llm-playwright', {
           promptContent: prompt?.promptContent || prompt?.content || '',
           testName: `Generated from ${prompt?.title}`,
           testType: prompt?.testType || 'UI Test',
           environment: selectedEnvironment, // Pass full environment object
-          parsedSteps: prompt?.metadata?.parsedSteps || [] // Send parsed steps to LLM
+          parsedSteps: prompt?.metadata?.parsedSteps || [] // Send parsed steps for reference
         });
       } else {
         // Use template-based generation (no LLM)
@@ -654,14 +697,14 @@ const Prompts = () => {
           />
           <ViewToggle>
             <ViewToggleButton
-              active={viewMode === 'list'}
+              $active={viewMode === 'list'}
               onClick={() => setViewMode('list')}
             >
               <FiList />
               List
             </ViewToggleButton>
             <ViewToggleButton
-              active={viewMode === 'grid'}
+              $active={viewMode === 'grid'}
               onClick={() => setViewMode('grid')}
             >
               <FiGrid />
@@ -882,6 +925,14 @@ const Prompts = () => {
             </CodeModalActions>
           </CodeModalContainer>
         </CodeModalOverlay>
+      )}
+
+      {/* Loading Message */}
+      {generatingCode && (
+        <LoadingMessage>
+          <LoadingSpinner />
+          AI Generating script for you
+        </LoadingMessage>
       )}
     </PromptsContainer>
   );

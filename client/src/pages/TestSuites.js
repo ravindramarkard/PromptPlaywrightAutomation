@@ -249,7 +249,7 @@ const EmptyDescription = styled.p`
 
 const TestSuites = () => {
   const [testSuites, setTestSuites] = useState([]);
-  const [activeTab, setActiveTab] = useState('TEST SUITES');
+  const [activeTab, setActiveTab] = useState('OVERVIEW');
   const [stats, setStats] = useState({
     totalSuites: 0,
     totalTests: 0,

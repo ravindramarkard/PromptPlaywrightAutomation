@@ -198,6 +198,7 @@ router.post('/:id/generate-test', async (req, res) => {
         testName: testName || prompt.title,
         testType: prompt.testType,
         baseUrl: prompt.baseUrl || process.env.BASE_URL,
+        tags: prompt.tags || [],
         ...options
       }
     );
