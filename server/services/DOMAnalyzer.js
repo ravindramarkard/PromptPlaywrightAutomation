@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const axios = require('axios');
 
 class DOMAnalyzer {
   constructor() {
@@ -8,20 +9,50 @@ class DOMAnalyzer {
 
   async initialize() {
     if (!this.browser) {
-      this.browser = await chromium.launch({ headless: true });
+      const headless = process.env.HEADLESS === 'false' ? false : true;
+      this.browser = await chromium.launch({ headless });
       this.page = await this.browser.newPage();
     }
   }
 
-  async analyzePage(url, timeout = 30000) {
+  async analyzePage(url, options = {}) {
     try {
       await this.initialize();
       
       console.log(`Analyzing DOM structure for: ${url}`);
-      await this.page.goto(url, { waitUntil: 'networkidle', timeout });
-      
-      // Wait for page to be fully loaded
-      await this.page.waitForLoadState('domcontentloaded');
+      // Backward compatibility: if a number was passed, treat as timeout
+      const resolved = typeof options === 'number' ? { timeout: options } : options || {};
+      const timeout = resolved.timeout || parseInt(process.env.PLAYWRIGHT_ANALYZER_TIMEOUT_MS || '60000', 10);
+      const waitUntil = resolved.waitUntil || process.env.PLAYWRIGHT_NAV_WAIT_UNTIL || 'load';
+      const retries = resolved.retries != null ? resolved.retries : parseInt(process.env.PLAYWRIGHT_ANALYZER_RETRIES || '2', 10);
+
+      // Try navigation with retries and fallback waitUntil strategies
+      const waitOrder = [waitUntil, 'load', 'domcontentloaded', 'networkidle'];
+      let lastError = null;
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        for (const wu of waitOrder) {
+          try {
+            console.log(`DOMAnalyzer: navigating (attempt ${attempt + 1}/${retries + 1}) waitUntil=${wu}, timeout=${timeout}ms`);
+            await this.page.goto(url, { waitUntil: wu, timeout });
+            // Basic readiness wait
+            await this.page.waitForLoadState('domcontentloaded', { timeout: Math.min(timeout, 15000) }).catch(() => {});
+            lastError = null;
+            break;
+          } catch (err) {
+            lastError = err;
+            console.warn(`DOMAnalyzer navigation failed with waitUntil=${wu}: ${err.message}`);
+          }
+        }
+        if (!lastError) break; // success
+      }
+
+      if (lastError) {
+        console.warn('DOMAnalyzer: navigation failed after retries, attempting HTML snapshot fallback...');
+        await this.loadHtmlSnapshot(url, timeout);
+      }
+       
+      // Wait for page to be fully loaded (best-effort)
+      await this.page.waitForLoadState('domcontentloaded', { timeout: Math.min(timeout, 15000) }).catch(() => {});
       
       // Extract all interactive elements with their attributes
       const elements = await this.page.evaluate(() => {
@@ -139,7 +170,7 @@ class DOMAnalyzer {
             elementInfo.selectors.push(`.${link.className.split(' ').join('.')}`);
           }
           if (link.href) {
-            elementInfo.selectors.push(`[href="${link.href}"]`);
+            elementInfo.selectors.push(`[href="${link.getAttribute('href')}"]`);
           }
           if (link.textContent?.trim()) {
             elementInfo.selectors.push(`text=${link.textContent.trim()}`);
@@ -206,6 +237,22 @@ class DOMAnalyzer {
     }
   }
 
+  async loadHtmlSnapshot(url, timeout) {
+    try {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), Math.min(timeout, 15000));
+      const res = await axios.get(url, { signal: controller.signal, timeout: Math.min(timeout, 15000) });
+      clearTimeout(id);
+      const html = res.data;
+      // Load static HTML to extract basic elements
+      await this.page.setContent(html, { waitUntil: 'domcontentloaded' });
+      console.log('DOMAnalyzer: HTML snapshot loaded for basic extraction');
+    } catch (e) {
+      console.warn('DOMAnalyzer: HTML snapshot fallback failed:', e.message);
+      throw e;
+    }
+  }
+
   findElementByPurpose(elements, purpose) {
     const purposeLower = purpose.toLowerCase();
     
@@ -258,36 +305,30 @@ class DOMAnalyzer {
       if (element && element.selectors.length > 0) {
         recommendations[action.target] = {
           element,
-          recommendedSelector: element.selectors[0], // Best selector
-          alternativeSelectors: element.selectors.slice(1),
-          action: action.action
+          bestSelector: element.selectors[0],
+          alternatives: element.selectors.slice(1, 5)
         };
       }
     });
-    
+ 
     return recommendations;
   }
 
   parseActionsFromPrompt(prompt) {
     const actions = [];
-    const promptLower = prompt.toLowerCase();
+    if (!prompt || typeof prompt !== 'string') return actions;
     
-    // Common patterns
-    if (promptLower.includes('username') || promptLower.includes('user')) {
-      actions.push({ action: 'fill', target: 'username' });
-    }
-    if (promptLower.includes('password')) {
-      actions.push({ action: 'fill', target: 'password' });
-    }
-    if (promptLower.includes('login') || promptLower.includes('sign in')) {
+    const lower = prompt.toLowerCase();
+    
+    if (lower.includes('login') || lower.includes('sign in')) {
+      actions.push({ action: 'type', target: 'username' });
+      actions.push({ action: 'type', target: 'password' });
       actions.push({ action: 'click', target: 'login' });
     }
-    if (promptLower.includes('search')) {
-      actions.push({ action: 'fill', target: 'search' });
-      actions.push({ action: 'click', target: 'search' });
-    }
-    if (promptLower.includes('directory')) {
-      actions.push({ action: 'click', target: 'directory' });
+    
+    if (lower.includes('search')) {
+      actions.push({ action: 'type', target: 'search' });
+      actions.push({ action: 'click', target: 'submit' });
     }
     
     return actions;

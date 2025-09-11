@@ -2,6 +2,48 @@ const fs = require('fs-extra');
 const path = require('path');
 const LLMService = require('./LLMService');
 
+// Minimal sanitizer to keep only Playwright spec code
+function sanitizeLLMCode(rawCode) {
+  if (!rawCode || typeof rawCode !== 'string') return rawCode;
+  let cleaned = rawCode
+    .replace(/```typescript\n?/gi, '')
+    .replace(/```tsx\n?/gi, '')
+    .replace(/```javascript\n?/gi, '')
+    .replace(/```js\n?/gi, '')
+    .replace(/```ts\n?/gi, '')
+    .replace(/```\n?/g, '')
+    .trim();
+
+  const firstImportIdx = cleaned.search(/\bimport\s+\{/);
+  if (firstImportIdx > -1) cleaned = cleaned.substring(firstImportIdx);
+
+  const endings = [
+    cleaned.lastIndexOf('\n});'),
+    cleaned.lastIndexOf('\n}\);'),
+    cleaned.lastIndexOf('\n});\n')
+  ].filter(i => i >= 0);
+  if (endings.length > 0) {
+    const cutAt = Math.max(...endings) + 4;
+    cleaned = cleaned.substring(0, cutAt);
+  }
+
+  cleaned = cleaned
+    .split('\n')
+    .filter(line => {
+      const t = line.trim();
+      if (/^(Explanation:|Note:|Tips?:)/i.test(t)) return false;
+      if (/^[-*]\s/.test(t) && !/^\*\s@/.test(t)) return false;
+      if (/^\d+\./.test(t)) return false;
+      return true;
+    })
+    .join('\n')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim();
+
+  return cleaned;
+}
+
 class CodeGenerator {
   constructor() {
     this.templates = {
@@ -77,7 +119,9 @@ class CodeGenerator {
         options
       );
       
-      return enhancedCode;
+      // Sanitize the returned code to remove any extra prose
+      const sanitized = sanitizeLLMCode(enhancedCode);
+      return sanitized || enhancedCode;
     } catch (error) {
       console.error('LLM enhancement failed, using base template:', error);
       // Fallback to template-based generation

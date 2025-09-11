@@ -15,6 +15,7 @@ module.exports = defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
+  
   reporter: [
     ['html'],
     ['allure-playwright', { 
@@ -26,7 +27,7 @@ module.exports = defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.BASE_URL,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -83,29 +84,29 @@ module.exports = defineConfig({
         channel: 'chrome',
         // Additional performance optimizations
         launchOptions: {
-          args: [
-            '--disable-background-timer-throttling',
-            '--disable-backgrounding-occluded-windows',
-            '--disable-renderer-backgrounding',
-            '--disable-features=TranslateUI',
-            '--disable-ipc-flooding-protection',
-            '--disable-background-networking',
-            '--disable-default-apps',
-            '--disable-extensions',
-            '--disable-sync',
-            '--disable-translate',
-            '--hide-scrollbars',
-            '--mute-audio',
-            '--no-first-run',
-            '--no-default-browser-check',
-            '--disable-gpu-sandbox',
-            '--disable-software-rasterizer',
-            '--disable-dev-shm-usage',
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-web-security',
-            '--disable-features=VizDisplayCompositor'
-          ],
+          // args: [
+          //   '--disable-background-timer-throttling',
+          //   '--disable-backgrounding-occluded-windows',
+          //   '--disable-renderer-backgrounding',
+          //   '--disable-features=TranslateUI',
+          //   '--disable-ipc-flooding-protection',
+          //   '--disable-background-networking',
+          //   '--disable-default-apps',
+          //   '--disable-extensions',
+          //   '--disable-sync',
+          //   '--disable-translate',
+          //   '--hide-scrollbars',
+          //   '--mute-audio',
+          //   '--no-first-run',
+          //   '--no-default-browser-check',
+          //   '--disable-gpu-sandbox',
+          //   '--disable-software-rasterizer',
+          //   '--disable-dev-shm-usage',
+          //   '--no-sandbox',
+          //   '--disable-setuid-sandbox',
+          //   '--disable-web-security',
+          //   '--disable-features=VizDisplayCompositor'
+          // ],
           ignoreDefaultArgs: ['--enable-automation'],
         }
       },

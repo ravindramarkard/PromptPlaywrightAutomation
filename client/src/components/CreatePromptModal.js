@@ -158,7 +158,7 @@ const Button = styled.button`
   }
 `;
 
-const CreatePromptModal = ({ onClose, onSubmit }) => {
+const CreatePromptModal = ({ onClose, onSubmit, initialData, titleOverride, submitLabel }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -169,6 +169,21 @@ const CreatePromptModal = ({ onClose, onSubmit }) => {
     baseUrl: '',
     additionalInformation: ''
   });
+
+  React.useEffect(() => {
+    if (initialData) {
+      setFormData({
+        title: initialData.title || '',
+        description: initialData.description || '',
+        promptContent: initialData.promptContent || initialData.content || '',
+        testType: initialData.testType || 'UI Test',
+        tags: Array.isArray(initialData.tags) ? initialData.tags.join(', ') : (initialData.tags || ''),
+        additionalContext: initialData.additionalContext || '',
+        baseUrl: initialData.baseUrl || '',
+        additionalInformation: initialData.additionalInformation || ''
+      });
+    }
+  }, [initialData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -200,7 +215,7 @@ const CreatePromptModal = ({ onClose, onSubmit }) => {
     <ModalOverlay onClick={handleOverlayClick}>
       <ModalContent onClick={(e) => e.stopPropagation()}>
         <ModalHeader>
-          <ModalTitle>Create New Prompt</ModalTitle>
+          <ModalTitle>{titleOverride || 'Create New Prompt'}</ModalTitle>
           <CloseButton onClick={onClose}>
             <FiX />
           </CloseButton>
@@ -320,7 +335,7 @@ const CreatePromptModal = ({ onClose, onSubmit }) => {
               className="primary"
             >
               <FiSave />
-              Create
+              {submitLabel || 'Create'}
             </Button>
           </ModalFooter>
         </form>

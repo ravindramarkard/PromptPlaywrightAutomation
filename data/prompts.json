@@ -670,5 +670,375 @@
     },
     "createdAt": "2025-09-09T21:09:09.651Z",
     "updatedAt": "2025-09-09T21:09:09.651Z"
+  },
+  {
+    "_id": "0e17bd49-1ba4-4344-8252-92444bc02624",
+    "title": "App login",
+    "description": "App login",
+    "promptContent": "Test case-1: Login into app\nNavigate to Url env base url\nEnter username in textfield with: test22\nEnter password in textfield with: pass123\nClick on Log in button\nVerify Logged in success\n\nTest case-2: Create a new cases\nClick on Create new case button\nEnter text for casename : autosep11\nEnter text for Description : autotestspt11\nClick on save button",
+    "testType": "UI Test",
+    "tags": [
+      "smoke"
+    ],
+    "additionalContext": "",
+    "baseUrl": "https://staging-shaheen.dev.g42a.ae/",
+    "additionalInformation": "",
+    "projectId": "default-project",
+    "modelId": "default-model",
+    "modelName": "Default Model",
+    "promptId": "9f393c98-e15d-469c-880f-75982c0d32c9",
+    "status": "draft",
+    "generatedTests": [],
+    "metadata": {
+      "parsedSteps": [
+        {
+          "stepNumber": 1,
+          "originalText": "Test case-1: Login into app",
+          "action": "unknown",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 2,
+          "originalText": "Navigate to Url env base url",
+          "action": "navigate",
+          "target": "Navigate Url env base url",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 3,
+          "originalText": "Enter username in textfield with: test22",
+          "action": "fill",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 4,
+          "originalText": "Enter password in textfield with: pass123",
+          "action": "fill",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 5,
+          "originalText": "Click on Log in button",
+          "action": "click",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 6,
+          "originalText": "Verify Logged in success",
+          "action": "assert",
+          "target": "Logged success",
+          "value": null,
+          "assertion": "Logged in success",
+          "waitTime": null
+        },
+        {
+          "stepNumber": 7,
+          "originalText": "Test case-2: Create a new cases",
+          "action": "unknown",
+          "target": "Test case-2: Create new cases",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 8,
+          "originalText": "Click on Create new case button",
+          "action": "click",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 9,
+          "originalText": "Enter text for casename : autosep11",
+          "action": "fill",
+          "target": "text",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 10,
+          "originalText": "Enter text for Description : autotestspt11",
+          "action": "fill",
+          "target": "text",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 11,
+          "originalText": "Click on save button",
+          "action": "click",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        }
+      ],
+      "timestamp": "2025-09-11T08:27:33.351Z"
+    },
+    "createdAt": "2025-09-10T07:52:54.671Z",
+    "updatedAt": "2025-09-11T08:34:46.392Z"
+  },
+  {
+    "_id": "f64a86a6-3bb6-408c-8044-1c1ebb317dab",
+    "title": "Verify invalid login",
+    "description": "Invalid Login ",
+    "promptContent": "Navigate to Url: https://staging-shaheen.dev.g42a.ae/\nEnter username in textfield with: testtt111\nEnter password in textfield with: pass123\nClick on Log in button\nVerify invalid login",
+    "testType": "UI Test",
+    "tags": [
+      "smoke"
+    ],
+    "additionalContext": "",
+    "baseUrl": "https://staging-shaheen.dev.g42a.ae/",
+    "additionalInformation": "",
+    "projectId": "default-project",
+    "modelId": "default-model",
+    "modelName": "Default Model",
+    "promptId": "a0e26f1e-5b7b-49cf-b5e9-adadb31be933",
+    "status": "draft",
+    "generatedTests": [],
+    "metadata": {
+      "parsedSteps": [
+        {
+          "stepNumber": 1,
+          "originalText": "Navigate to Url: https://staging-shaheen.dev.g42a.ae/",
+          "action": "navigate",
+          "target": "https://staging-shaheen.dev.g42a.ae/",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 2,
+          "originalText": "Enter username in textfield with: testtt111",
+          "action": "fill",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 3,
+          "originalText": "Enter password in textfield with: pass123",
+          "action": "fill",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 4,
+          "originalText": "Click on Log in button",
+          "action": "click",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 5,
+          "originalText": "Verify invalid login",
+          "action": "assert",
+          "target": "[data-testid=\"login\"]",
+          "value": null,
+          "assertion": "invalid login",
+          "waitTime": null
+        }
+      ],
+      "timestamp": "2025-09-10T09:37:27.578Z"
+    },
+    "createdAt": "2025-09-10T09:37:27.580Z",
+    "updatedAt": "2025-09-10T09:37:27.580Z"
+  },
+  {
+    "_id": "4beb42b3-7a03-4714-af09-92d69dfbd21e",
+    "title": "Frontend Test (Copy)",
+    "description": "Test frontend functionality",
+    "promptContent": "Navigate to the homepage, click on the login button, fill username with test@example.com, fill password with password123, click submit",
+    "testType": "UI Test",
+    "tags": [
+      "frontend",
+      "login"
+    ],
+    "additionalContext": "",
+    "baseUrl": "",
+    "additionalInformation": "",
+    "projectId": "default-project",
+    "modelId": "default-model",
+    "modelName": "Default Model",
+    "promptId": "8f77f124-f9f5-49bb-85bc-2a3d76471543",
+    "status": "draft",
+    "generatedTests": [],
+    "metadata": {
+      "parsedSteps": [
+        {
+          "stepNumber": 1,
+          "originalText": "Navigate to the homepage, click on the login button, fill username with test@example.com, fill password with password123, click submit",
+          "action": "navigate",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        }
+      ],
+      "timestamp": "2025-09-11T06:56:03.547Z"
+    },
+    "createdAt": "2025-09-11T06:56:03.549Z",
+    "updatedAt": "2025-09-11T06:56:03.549Z"
+  },
+  {
+    "_id": "789b35e3-99c9-4f93-8f21-35a655a9b7de",
+    "title": "alread open browser",
+    "description": "already open ",
+    "promptContent": "already open url : https://staging-shaheen.dev.g42a.ae/\nClick on Create new case button\nEnter text for casename : autosep11\nEnter text for Description : autotestspt11\nClick on save button",
+    "testType": "UI Test",
+    "tags": [],
+    "additionalContext": "",
+    "baseUrl": "",
+    "additionalInformation": "",
+    "projectId": "default-project",
+    "modelId": "default-model",
+    "modelName": "Default Model",
+    "promptId": "e0ca4fbe-2e37-4020-8092-a2ea883498e5",
+    "status": "draft",
+    "generatedTests": [],
+    "metadata": {
+      "parsedSteps": [
+        {
+          "stepNumber": 1,
+          "originalText": "already open url : https://staging-shaheen.dev.g42a.ae/",
+          "action": "navigate",
+          "target": "https://staging-shaheen.dev.g42a.ae/",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 2,
+          "originalText": "Click on Create new case button",
+          "action": "click",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 3,
+          "originalText": "Enter text for casename : autosep11",
+          "action": "fill",
+          "target": "text",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 4,
+          "originalText": "Enter text for Description : autotestspt11",
+          "action": "fill",
+          "target": "text",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 5,
+          "originalText": "Click on save button",
+          "action": "click",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        }
+      ],
+      "timestamp": "2025-09-11T08:19:06.748Z"
+    },
+    "createdAt": "2025-09-11T08:19:06.751Z",
+    "updatedAt": "2025-09-11T08:19:06.751Z"
+  },
+  {
+    "_id": "42f66940-93d5-43b9-8616-9617498b3e5d",
+    "title": "Multiple steps cases",
+    "description": "multiple steps cases",
+    "promptContent": "Navigate to Url env base url\nEnter username in textfield with: pass from environment  for user name\nEnter password in textfield with: pass from environment for password\nClick on Log in button\nVerify Logged in success\n ",
+    "testType": "UI Test",
+    "tags": [],
+    "additionalContext": "",
+    "baseUrl": "",
+    "additionalInformation": "",
+    "projectId": "default-project",
+    "modelId": "default-model",
+    "modelName": "Default Model",
+    "promptId": "42129851-04bd-48fa-8a70-bd138b0af078",
+    "status": "draft",
+    "generatedTests": [],
+    "metadata": {
+      "parsedSteps": [
+        {
+          "stepNumber": 1,
+          "originalText": "Navigate to Url env base url",
+          "action": "navigate",
+          "target": "Navigate Url env base url",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 2,
+          "originalText": "Enter username in textfield with: pass from environment  for user name",
+          "action": "fill",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 3,
+          "originalText": "Enter password in textfield with: pass from environment for password",
+          "action": "fill",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 4,
+          "originalText": "Click on Log in button",
+          "action": "click",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 5,
+          "originalText": "Verify Logged in success",
+          "action": "assert",
+          "target": "Logged success",
+          "value": null,
+          "assertion": "Logged in success",
+          "waitTime": null
+        }
+      ],
+      "timestamp": "2025-09-11T08:25:03.291Z"
+    },
+    "createdAt": "2025-09-11T08:25:03.292Z",
+    "updatedAt": "2025-09-11T08:25:03.292Z"
   }
 ]

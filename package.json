@@ -4,6 +4,7 @@
   "description": "AI-powered test generation platform using Playwright and Allure",
   "main": "server/index.js",
   "scripts": {
+    "install:browsers": "PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd server && npm run dev",
     "client": "cd client && npm start",

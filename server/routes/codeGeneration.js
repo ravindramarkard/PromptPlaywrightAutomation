@@ -14,63 +14,81 @@ function cleanGeneratedCode(rawCode) {
     return rawCode;
   }
   
-  // Remove markdown code blocks
-  let cleaned = rawCode.replace(/```typescript\n?/g, '').replace(/```\n?/g, '');
-  cleaned = cleaned.replace(/```javascript\n?/g, '').replace(/```js\n?/g, '');
+  // Remove markdown code fences of various types
+  let cleaned = rawCode
+    .replace(/```typescript\n?/gi, '')
+    .replace(/```tsx\n?/gi, '')
+    .replace(/```javascript\n?/gi, '')
+    .replace(/```js\n?/gi, '')
+    .replace(/```ts\n?/gi, '')
+    .replace(/```\n?/g, '');
   
-  // Remove any leading/trailing whitespace
   cleaned = cleaned.trim();
-  
+
+  // Try to isolate only the code between the first import and the last test closure
+  const firstImportIdx = cleaned.search(/\bimport\s+\{/);
+  if (firstImportIdx > -1) {
+    cleaned = cleaned.substring(firstImportIdx);
+  }
+
+  // Hoist any test.use({...}) to top-level (before first describe)
+  try {
+    const useMatches = [...cleaned.matchAll(/test\.use\(\{[\s\S]*?\}\);/g)];
+    if (useMatches.length > 0) {
+      const firstUse = useMatches[0][0];
+      // Remove all occurrences
+      cleaned = cleaned.replace(/test\.use\(\{[\s\S]*?\}\);/g, '');
+      // Insert a single top-level test.use right after imports
+      const firstDescribeIdx = cleaned.search(/\btest\.describe\s*\(/);
+      if (firstDescribeIdx > -1) {
+        cleaned = cleaned.slice(0, firstDescribeIdx) + firstUse + '\n' + cleaned.slice(firstDescribeIdx);
+      } else {
+        cleaned = firstUse + '\n' + cleaned;
+      }
+    }
+  } catch {}
+
+  // Attempt to cut trailing prose after the last matching \n}); or \n}\); typical in Playwright files
+  const endings = [
+    cleaned.lastIndexOf('\n});'),
+    cleaned.lastIndexOf('\n}\);'),
+    cleaned.lastIndexOf('\n});\n')
+  ].filter(i => i >= 0);
+  if (endings.length > 0) {
+    const cutAt = Math.max(...endings) + 4; // include '});'
+    cleaned = cleaned.substring(0, cutAt);
+  }
+
+  // Remove common explanatory prefixes/lines
+  cleaned = cleaned
+    .split('\n')
+    .filter(line => {
+      const t = line.trim();
+      if (/^(Explanation:|Note:|Tips?:)/i.test(t)) return false;
+      if (/^[-*]\s/.test(t) && !/^\*\s@/.test(t)) return false; // drop bullet points except JSDoc tags
+      if (/^\d+\./.test(t)) return false; // numbered lists
+      return true;
+    })
+    .join('\n');
+
   // CRITICAL: Fix ambiguous selectors that cause strict mode violations
   cleaned = fixAmbiguousSelectors(cleaned);
-  
-  // Remove any explanatory text before the first import
-  const importIndex = cleaned.indexOf('import {');
-  if (importIndex > 0) {
-    cleaned = cleaned.substring(importIndex);
-  }
-  
+
   // Fix async/await syntax issues in callback functions
-  // Replace await inside non-async callbacks with proper async syntax
   cleaned = cleaned.replace(
     /(allure\.createStep\([^,]+,\s*)\(\)\s*=>\s*{([^}]*await[^}]*)}/g,
     '$1async () => {$2}'
   );
-  
+
   // Fix other common callback patterns with await
   cleaned = cleaned.replace(
     /(\w+\.\w+\([^,]*,\s*)\(([^)]*)\)\s*=>\s*{([^}]*await[^}]*)}/g,
     '$1async ($2) => {$3}'
   );
-  
-  // Remove explanatory text after the last closing brace
-  // Find the last occurrence of }); which typically ends a test file
-  const lastTestEnd = cleaned.lastIndexOf('});');
-  if (lastTestEnd > 0) {
-    // Look for any explanatory text after the last test
-    const afterLastTest = cleaned.substring(lastTestEnd + 3).trim();
-    if (afterLastTest.includes('Explanation:') || afterLastTest.includes('*') || afterLastTest.includes('The `')) {
-      cleaned = cleaned.substring(0, lastTestEnd + 3);
-    }
-  }
-  
-  // Remove any lines that start with explanatory markers
-  const lines = cleaned.split('\n');
-  const filteredLines = lines.filter(line => {
-    const trimmed = line.trim();
-    return !trimmed.startsWith('Explanation:') && 
-           !trimmed.startsWith('* The `') && 
-           !trimmed.startsWith('*') ||
-           trimmed.startsWith('* @') || // Keep JSDoc comments
-           trimmed.startsWith('*/') ||  // Keep JSDoc end
-           trimmed.startsWith('/**');   // Keep JSDoc start
-  });
-  
-  cleaned = filteredLines.join('\n');
-  
-  // Ensure proper line endings
+
+  // Normalize line endings
   cleaned = cleaned.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  
+
   return cleaned.trim();
 }
 

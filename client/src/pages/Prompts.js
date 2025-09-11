@@ -6,6 +6,20 @@ import api from '../config/axios';
 import CreatePromptModal from '../components/CreatePromptModal';
 import PromptDetailsModal from '../components/PromptDetailsModal';
 
+// Simple wrapper to reuse CreatePromptModal for editing/copying by seeding initial values
+function EditPromptModal({ initial, onClose, onSubmit }) {
+  const [seed, setSeed] = React.useState(initial || null);
+  return (
+    <CreatePromptModal
+      onClose={onClose}
+      onSubmit={onSubmit}
+      initialData={seed}
+      titleOverride={initial?._id ? 'Edit Prompt' : 'Copy Prompt'}
+      submitLabel={initial?._id ? 'Update' : 'Create Copy'}
+    />
+  );
+}
+
 const PromptsContainer = styled.div`
   padding: 30px;
   background-color: #f8f9fa;
@@ -502,6 +516,8 @@ const Prompts = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPrompt, setEditingPrompt] = useState(null);
   const [selectedPrompt, setSelectedPrompt] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
@@ -563,6 +579,45 @@ const Prompts = () => {
         console.error('Error deleting prompt:', error);
         toast.error('Failed to delete prompt');
       }
+    }
+  };
+
+  const handleEditClick = (prompt) => {
+    setEditingPrompt(prompt);
+    setShowEditModal(true);
+  };
+
+  const handleCopyClick = (prompt) => {
+    // Open modal with copied seed (clear ids and timestamps)
+    const seed = {
+      ...prompt,
+      title: `${prompt.title} (Copy)`,
+      promptId: undefined,
+      _id: undefined,
+      createdAt: undefined,
+      updatedAt: undefined
+    };
+    setEditingPrompt(seed);
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (data) => {
+    try {
+      // If editing an existing prompt, PUT; if copying (no _id), POST
+      if (editingPrompt?._id) {
+        const res = await api.put(`/prompts/${editingPrompt._id}`, data);
+        setPrompts(prompts.map(p => (p._id === editingPrompt._id ? res.data : p)));
+        toast.success('Prompt updated');
+      } else {
+        const res = await api.post('/prompts', data);
+        setPrompts([res.data, ...prompts]);
+        toast.success('Prompt copied');
+      }
+      setShowEditModal(false);
+      setEditingPrompt(null);
+    } catch (error) {
+      console.error('Error saving prompt:', error);
+      toast.error('Failed to save prompt');
     }
   };
 
@@ -752,6 +807,18 @@ const Prompts = () => {
                   <FiEye />
                 </ActionButton>
                 <ActionButton
+                  onClick={() => handleEditClick(prompt)}
+                  title="Edit Prompt"
+                >
+                  <FiEdit3 />
+                </ActionButton>
+                <ActionButton
+                  onClick={() => handleCopyClick(prompt)}
+                  title="Copy Prompt"
+                >
+                  <FiPlus />
+                </ActionButton>
+                <ActionButton
                   onClick={() => handleGenerateClick(prompt._id)}
                   title="Generate Enhanced Test with LLM"
                   disabled={generatingCode}
@@ -796,6 +863,18 @@ const Prompts = () => {
                   <FiEye />
                 </ActionButton>
                 <ActionButton
+                  onClick={() => handleEditClick(prompt)}
+                  title="Edit Prompt"
+                >
+                  <FiEdit3 />
+                </ActionButton>
+                <ActionButton
+                  onClick={() => handleCopyClick(prompt)}
+                  title="Copy Prompt"
+                >
+                  <FiPlus />
+                </ActionButton>
+                <ActionButton
                   onClick={() => handleGenerateClick(prompt._id)}
                   title="Generate Enhanced Test with LLM"
                   disabled={generatingCode}
@@ -830,6 +909,15 @@ const Prompts = () => {
             handleGenerateClick(selectedPrompt._id);
             setShowDetailsModal(false);
           }}
+        />
+      )}
+
+      {/* Edit / Copy Prompt Modal */}
+      {showEditModal && (
+        <EditPromptModal
+          initial={editingPrompt}
+          onClose={() => { setShowEditModal(false); setEditingPrompt(null); }}
+          onSubmit={handleEditSubmit}
         />
       )}
 

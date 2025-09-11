@@ -5,7 +5,7 @@
     "key": "llm-test",
     "description": "Environment for testing LLM code generation",
     "variables": {
-      "BASE_URL": "https://practicetestautomation.com/practice-test-login/",
+      "BASE_URL": "https://staging-shaheen.dev.g42a.ae/",
       "API_URL": "https://fakerestapi.azurewebsites.net",
       "USERNAME": "student",
       "PASSWORD": "Password123",
@@ -24,14 +24,14 @@
     },
     "llmConfiguration": {
       "enabled": true,
-      "provider": "openrouter",
-      "apiKey": "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",
-      "model": "qwen/qwen3-coder:free",
-      "baseUrl": "https://openrouter.ai",
-      "llmProvider": "OpenRouter"
+      "provider": "local",
+      "apiKey": "",
+      "model": "qwen-coder",
+      "baseUrl": "http://10.100.100.102:5013/v1",
+      "llmProvider": "openai"
     },
     "createdAt": "2025-09-04T18:07:35.071Z",
-    "updatedAt": "2025-09-09T21:54:13.661Z",
+    "updatedAt": "2025-09-10T12:57:20.163Z",
     "status": "active"
   },
   {

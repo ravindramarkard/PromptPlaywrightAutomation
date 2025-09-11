@@ -90,7 +90,11 @@ class LLMService {
     if (!isAPITest) {
       try {
         console.log('Starting DOM analysis for URL:', baseUrl);
-        domAnalysis = await this.domAnalyzer.analyzePage(baseUrl);
+        domAnalysis = await this.domAnalyzer.analyzePage(baseUrl, {
+          timeout: environment?.variables?.TIMEOUT || parseInt(process.env.PLAYWRIGHT_ANALYZER_TIMEOUT_MS || '60000', 10),
+          waitUntil: process.env.PLAYWRIGHT_NAV_WAIT_UNTIL || 'load',
+          retries: parseInt(process.env.PLAYWRIGHT_ANALYZER_RETRIES || '2', 10)
+        });
         console.log(`DOM analysis completed successfully. Found ${domAnalysis.elements.length} interactive elements`);
         console.log('Sample elements found:', domAnalysis.elements.slice(0, 3).map(el => ({ type: el.type, selectors: el.selectors.slice(0, 2) })));
       } catch (error) {
@@ -554,7 +558,17 @@ ${code}
       async generate({ systemPrompt, userPrompt, temperature = 0.1, maxTokens = 4000 }) {
         return await RetryHelper.withRetry(async () => {
           try {
-            const response = await axios.post(`${baseUrl}/v1/chat/completions`, {
+            const hasV1 = baseUrl.endsWith('/v1');
+            const endpoint = hasV1 ? `${baseUrl}/chat/completions` : `${baseUrl}/v1/chat/completions`;
+
+            const headers = {
+              'Content-Type': 'application/json'
+            };
+            if (apiKey) {
+              headers['Authorization'] = `Bearer ${apiKey}`;
+            }
+
+            const response = await axios.post(endpoint, {
               model: model || 'gpt-3.5-turbo',
               messages: [
                 { role: 'system', content: systemPrompt },
@@ -563,10 +577,7 @@ ${code}
               temperature,
               max_tokens: maxTokens
             }, {
-              headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-              }
+              headers
             });
 
             return response.data.choices[0].message.content;
