@@ -75,7 +75,7 @@ class FileStorage {
 
     // Apply pagination
     const page = parseInt(query.page) || 1;
-    const limit = parseInt(query.limit) || 10;
+    const limit = parseInt(query.limit) || 1000; // Increased default limit to show all prompts
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
     
@@ -218,6 +218,32 @@ class FileStorage {
     const filteredSuites = testSuites.filter(s => s._id !== id);
     await this.writeFile('testSuites.json', filteredSuites);
     return true;
+  }
+
+  // Synchronous versions for compatibility
+  getTestSuites() {
+    try {
+      const filePath = path.join(this.dataDir, 'testSuites.json');
+      if (!fs.existsSync(filePath)) {
+        return [];
+      }
+      const data = fs.readFileSync(filePath, 'utf8');
+      return JSON.parse(data);
+    } catch (error) {
+      console.error('Error reading test suites:', error);
+      return [];
+    }
+  }
+
+  saveTestSuites(testSuites) {
+    try {
+      const filePath = path.join(this.dataDir, 'testSuites.json');
+      fs.writeFileSync(filePath, JSON.stringify(testSuites, null, 2), 'utf8');
+      return true;
+    } catch (error) {
+      console.error('Error saving test suites:', error);
+      return false;
+    }
   }
 
   // Test Result operations

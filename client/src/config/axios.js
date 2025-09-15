@@ -2,8 +2,8 @@ import axios from 'axios';
 
 // Create axios instance with base URL
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api',
-  timeout: 120000, // Increased timeout to 2 minutes for LLM generation
+  baseURL: 'http://localhost:5051/api',
+  timeout: 30000, // 30 seconds timeout for API calls (execution is now asynchronous)
   headers: {
     'Content-Type': 'application/json',
   },

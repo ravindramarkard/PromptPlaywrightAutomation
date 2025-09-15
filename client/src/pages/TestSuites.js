@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { FiPlus, FiPlay, FiBarChart2, FiSettings, FiTrash2, FiEdit3, FiRefreshCw } from 'react-icons/fi';
+import { FiPlus, FiPlay, FiBarChart2, FiSettings, FiTrash2, FiEdit3, FiRefreshCw, FiClipboard, FiBox, FiFileText, FiTag } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import api from '../config/axios';
 
 const TestSuitesContainer = styled.div`
-  padding: 20px;
+  padding: 0;
   background-color: #f8f9fa;
   min-height: 100vh;
 `;
 
 const TabsContainer = styled.div`
   background: white;
-  border-radius: 8px 8px 0 0;
+  border-radius: 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 0;
 `;
@@ -20,10 +21,11 @@ const TabsContainer = styled.div`
 const TabsList = styled.div`
   display: flex;
   border-bottom: 1px solid #e9ecef;
+  padding: 0 20px;
 `;
 
 const Tab = styled.button`
-  padding: 12px 24px;
+  padding: 16px 24px;
   border: none;
   background: none;
   color: ${props => props.$active ? '#007bff' : '#6c757d'};
@@ -32,6 +34,9 @@ const Tab = styled.button`
   cursor: pointer;
   border-bottom: 2px solid ${props => props.$active ? '#007bff' : 'transparent'};
   transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   
   &:hover {
     color: #007bff;
@@ -40,7 +45,7 @@ const Tab = styled.button`
 
 const TabContent = styled.div`
   background: white;
-  border-radius: 0 0 8px 8px;
+  border-radius: 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
@@ -48,11 +53,13 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  padding: 20px;
+  background: white;
+  border-bottom: 1px solid #e9ecef;
 `;
 
 const Title = styled.h1`
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 600;
   color: #2c3e50;
   margin: 0;
@@ -62,7 +69,7 @@ const Title = styled.h1`
 
 const TitleIcon = styled.span`
   margin-right: 12px;
-  color: #3498db;
+  color: #007bff;
 `;
 
 const Button = styled.button`
@@ -117,14 +124,16 @@ const Button = styled.button`
 
 
 const TableContainer = styled.div`
-  padding: 20px;
+  padding: 0;
 `;
 
 const TableHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  padding: 20px;
+  background: white;
+  border-bottom: 1px solid #e9ecef;
 `;
 
 const TableTitle = styled.h2`
@@ -146,9 +155,6 @@ const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
   background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
 const TableHead = styled.thead`
@@ -162,7 +168,7 @@ const TableRow = styled.tr`
 `;
 
 const TableHeaderCell = styled.th`
-  padding: 12px 16px;
+  padding: 16px 20px;
   text-align: left;
   font-weight: 600;
   color: #495057;
@@ -171,10 +177,11 @@ const TableHeaderCell = styled.th`
 `;
 
 const TableCell = styled.td`
-  padding: 12px 16px;
+  padding: 16px 20px;
   border-bottom: 1px solid #dee2e6;
   font-size: 14px;
   color: #495057;
+  vertical-align: middle;
   
   &:last-child {
     text-align: right;
@@ -183,8 +190,8 @@ const TableCell = styled.td`
 
 const Badge = styled.span`
   display: inline-block;
-  padding: 4px 8px;
-  border-radius: 12px;
+  padding: 6px 12px;
+  border-radius: 16px;
   font-size: 12px;
   font-weight: 500;
   
@@ -197,6 +204,32 @@ const Badge = styled.span`
     background-color: #e8f5e8;
     color: #2e7d32;
   }
+`;
+
+const SuiteName = styled.div`
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 4px;
+`;
+
+const SuiteDescription = styled.div`
+  font-size: 12px;
+  color: #6c757d;
+`;
+
+const SettingsInfo = styled.div`
+  font-size: 12px;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const ActionGroup = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
 `;
 
 
@@ -248,8 +281,9 @@ const EmptyDescription = styled.p`
 `;
 
 const TestSuites = () => {
+  const location = useLocation();
   const [testSuites, setTestSuites] = useState([]);
-  const [activeTab, setActiveTab] = useState('OVERVIEW');
+  const [activeTab, setActiveTab] = useState('TEST SUITES');
   const [stats, setStats] = useState({
     totalSuites: 0,
     totalTests: 0,
@@ -260,17 +294,28 @@ const TestSuites = () => {
   const [loading, setLoading] = useState(true);
 
   const tabs = [
-    { id: 'OVERVIEW', label: 'OVERVIEW' },
-    { id: 'TEST SUITES', label: 'TEST SUITES' },
-    { id: 'COLLECTIONS', label: 'COLLECTIONS' },
-    { id: 'ALL TESTS', label: 'ALL TESTS' },
-    { id: 'TAGS', label: 'TAGS' }
+    { id: 'OVERVIEW', label: 'OVERVIEW', icon: FiBarChart2 },
+    { id: 'TEST SUITES', label: 'TEST MANAGEMENT', icon: FiClipboard },
+    { id: 'COLLECTIONS', label: 'COLLECTIONS', icon: FiBox },
+    { id: 'ALL TESTS', label: 'ALL TESTS', icon: FiFileText },
+    { id: 'TAGS', label: 'TAGS', icon: FiTag }
   ];
 
   useEffect(() => {
     fetchTestSuites();
     fetchStats();
   }, []);
+
+  // Handle URL hash to set active tab
+  useEffect(() => {
+    const hash = location.hash.substring(1); // Remove the # symbol
+    console.log('URL hash:', hash);
+    console.log('Current activeTab:', activeTab);
+    if (hash === 'all-tests') {
+      console.log('Setting activeTab to ALL TESTS');
+      setActiveTab('ALL TESTS');
+    }
+  }, [location.hash, activeTab]);
 
   const fetchTestSuites = async () => {
     try {
@@ -365,32 +410,28 @@ const TestSuites = () => {
     );
   }
 
+  console.log('Current activeTab:', activeTab);
+  
   return (
     <TestSuitesContainer>
-      <Header>
-        <Title>
-          <TitleIcon>
-            <FiBarChart2 />
-          </TitleIcon>
-          Test Suite Management
-        </Title>
-        <Button className="primary" onClick={() => fetchTestSuites()}>
-          <FiRefreshCw />
-          REFRESH
-        </Button>
-      </Header>
-
       <TabsContainer>
         <TabsList>
-          {tabs.map((tab) => (
-            <Tab
-              key={tab.id}
-              $active={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </Tab>
-          ))}
+          {tabs.map((tab) => {
+            const IconComponent = tab.icon;
+            return (
+              <Tab
+                key={tab.id}
+                $active={activeTab === tab.id}
+                onClick={() => {
+                  console.log('Switching to tab:', tab.id);
+                  setActiveTab(tab.id);
+                }}
+              >
+                <IconComponent size={16} />
+                {tab.label}
+              </Tab>
+            );
+          })}
         </TabsList>
       </TabsContainer>
 
@@ -399,12 +440,31 @@ const TestSuites = () => {
           <TableContainer>
             <TableHeader>
               <TableTitle>
-                <FiBarChart2 />
-                Test Suites
+                <FiClipboard />
+                Test Management
               </TableTitle>
               <TableActions>
-                <Button className="primary" onClick={() => handleCreateTestSuite()}>
-                  <FiPlus />
+                <Button 
+                  className="primary" 
+                  onClick={() => {
+                    console.log('Create Test Suite button clicked');
+                    handleCreateTestSuite();
+                  }}
+                  style={{ 
+                    backgroundColor: '#007bff', 
+                    color: 'white',
+                    padding: '12px 24px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <FiPlus size={16} />
                   CREATE TEST SUITE
                 </Button>
               </TableActions>
@@ -440,22 +500,16 @@ const TestSuites = () => {
                   {testSuites.map((suite) => (
                     <TableRow key={suite._id}>
                       <TableCell>
-                        <div>
-                          <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                            {suite.name}
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#6c757d' }}>
-                            {suite.description || suite.type || suite.testType}
-                          </div>
-                        </div>
+                        <SuiteName>{suite.name}</SuiteName>
+                        <SuiteDescription>{suite.description || suite.name}</SuiteDescription>
                       </TableCell>
                       <TableCell>
                         <Badge className="blue">
-                          {suite.environment || 'dev'}
+                          {suite.environment || 'ai_env'}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {suite.testCount || suite.tests?.length || 2}
+                        {suite.testCount || suite.tests?.length || suite.testCases?.length || 0}
                       </TableCell>
                       <TableCell>
                         {suite.tags && suite.tags.length > 0 ? (
@@ -465,22 +519,19 @@ const TestSuites = () => {
                             </Badge>
                           ))
                         ) : (
-                          <span style={{ color: '#6c757d' }}>chromium • Headed</span>
+                          <span style={{ color: '#6c757d' }}>-</span>
                         )}
                       </TableCell>
                       <TableCell>
-                        <ActionButton title="Settings">
-                          <FiSettings />
-                        </ActionButton>
+                        <SettingsInfo>
+                          chromium • {suite.type === 'custom' ? 'Headed' : 'Headless'}
+                        </SettingsInfo>
                       </TableCell>
                       <TableCell>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <ActionGroup>
                           <Button className="success" style={{ padding: '6px 12px', fontSize: '12px' }}>
                             <FiPlay style={{ fontSize: '12px' }} />
                             RUN
-                          </Button>
-                          <Button className="primary" style={{ padding: '6px 12px', fontSize: '12px' }}>
-                            VIEW FILE
                           </Button>
                           <ActionButton
                             onClick={() => {/* Edit functionality */}}
@@ -489,13 +540,13 @@ const TestSuites = () => {
                             <FiEdit3 />
                           </ActionButton>
                           <ActionButton
-                            onClick={() => handleDeleteTestSuite(suite.id)}
+                            onClick={() => handleDeleteTestSuite(suite._id)}
                             title="Delete Test Suite"
                             className="danger"
                           >
                             <FiTrash2 />
                           </ActionButton>
-                        </div>
+                        </ActionGroup>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -535,13 +586,19 @@ const TestSuites = () => {
         
         {activeTab === 'ALL TESTS' && (
           <TableContainer>
+            <TableHeader>
+              <TableTitle>
+                <FiFileText />
+                All Tests
+              </TableTitle>
+            </TableHeader>
             <div style={{ textAlign: 'center', padding: '60px' }}>
               <EmptyIcon>
-                <FiBarChart2 />
+                <FiFileText />
               </EmptyIcon>
               <EmptyTitle>All Tests</EmptyTitle>
               <EmptyDescription>
-                All tests content will be displayed here
+                View and manage all generated test files across all test suites
               </EmptyDescription>
             </div>
           </TableContainer>

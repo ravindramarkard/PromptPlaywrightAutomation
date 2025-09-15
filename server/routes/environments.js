@@ -57,7 +57,7 @@ router.post('/', async (req, res) => {
       key,
       description,
       variables: {
-        BASE_URL: variables?.BASE_URL || process.env.BASE_URL || 'http://localhost:3000',
+        BASE_URL: variables?.BASE_URL || process.env.BASE_URL || 'http://localhost:5050',
         API_URL: variables?.API_URL || '',
         USERNAME: variables?.USERNAME || '',
         PASSWORD: variables?.PASSWORD || '',
@@ -221,9 +221,9 @@ router.post('/test-llm-connection', async (req, res) => {
   try {
     const { provider, llmType, apiKey, baseUrl, model } = req.body;
 
-    // For local models, provider is the LLM provider name (e.g., "Ollama")
+    // For local models, provider is "local" and llmType is the actual provider name (e.g., "Ollama")
     // For non-local models, provider is the service name (e.g., "openai")
-    const isLocal = llmType === 'local';
+    const isLocal = provider === 'local';
 
     if (!provider) {
       return res.status(400).json({

@@ -98,9 +98,9 @@ npx playwright test --ui
 
 ### 4. Verify Setup
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5001
-- Test UI: http://localhost:3000/test-suites
+- Frontend: http://localhost:5050
+- Backend API: http://localhost:5051
+- Test UI: http://localhost:5050/test-suites
 
 ## 📝 Contributing Guidelines
 

@@ -48,7 +48,8 @@ class LLMService {
       openai: this.createOpenAIClient.bind(this),
       claude: this.createClaudeClient.bind(this),
       openrouter: this.createOpenRouterClient.bind(this),
-      local: this.createLocalClient.bind(this)
+      local: this.createLocalClient.bind(this),
+      ollama: this.createLocalClient.bind(this) // Ollama is a local model provider
     };
     this.domAnalyzer = new DOMAnalyzer();
   }
@@ -59,10 +60,18 @@ class LLMService {
     const { llmConfiguration } = environment || {};
     const {
       testName = 'Generated Test',
-      testType = 'UI Test',
-      baseUrl = process.env.BASE_URL || 'http://localhost:3000'
+      testType = 'UI Test'
     } = options;
+    
+    // Prioritize baseUrl from options, then environment variables, then default
+    const baseUrl = options.baseUrl || environment?.variables?.BASE_URL || process.env.BASE_URL || 'http://localhost:5050';
+    
+    console.log('=== LLM SERVICE BASE URL DEBUG ===');
+    console.log('baseUrl from options:', options.baseUrl);
+    console.log('environment.variables?.BASE_URL:', environment?.variables?.BASE_URL);
+    console.log('process.env.BASE_URL:', process.env.BASE_URL);
     console.log('Final baseUrl for DOM analysis:', baseUrl);
+    console.log('===================================');
     
     if (!llmConfiguration) {
       throw new Error('LLM configuration not found for this environment');
@@ -90,12 +99,27 @@ class LLMService {
     if (!isAPITest) {
       try {
         console.log('Starting DOM analysis for URL:', baseUrl);
-        domAnalysis = await this.domAnalyzer.analyzePage(baseUrl, {
-          timeout: environment?.variables?.TIMEOUT || parseInt(process.env.PLAYWRIGHT_ANALYZER_TIMEOUT_MS || '60000', 10),
-          waitUntil: process.env.PLAYWRIGHT_NAV_WAIT_UNTIL || 'load',
-          retries: parseInt(process.env.PLAYWRIGHT_ANALYZER_RETRIES || '2', 10)
-        });
-        console.log(`DOM analysis completed successfully. Found ${domAnalysis.elements.length} interactive elements`);
+        
+        // Check if we have parsed steps for user journey analysis
+        const parsedSteps = options.parsedSteps || [];
+        if (parsedSteps.length > 0) {
+          console.log('Using user journey analysis with', parsedSteps.length, 'steps');
+          domAnalysis = await this.domAnalyzer.analyzeUserJourney(baseUrl, parsedSteps, {
+            timeout: environment?.variables?.TIMEOUT || parseInt(process.env.PLAYWRIGHT_ANALYZER_TIMEOUT_MS || '60000', 10),
+            waitUntil: process.env.PLAYWRIGHT_NAV_WAIT_UNTIL || 'load',
+            retries: parseInt(process.env.PLAYWRIGHT_ANALYZER_RETRIES || '2', 10)
+          });
+          console.log(`User journey analysis completed successfully. Found ${domAnalysis.elements.length} unique elements across ${domAnalysis.totalPages || 1} pages`);
+        } else {
+          console.log('Using single page analysis');
+          domAnalysis = await this.domAnalyzer.analyzePage(baseUrl, {
+            timeout: environment?.variables?.TIMEOUT || parseInt(process.env.PLAYWRIGHT_ANALYZER_TIMEOUT_MS || '60000', 10),
+            waitUntil: process.env.PLAYWRIGHT_NAV_WAIT_UNTIL || 'load',
+            retries: parseInt(process.env.PLAYWRIGHT_ANALYZER_RETRIES || '2', 10)
+          });
+          console.log(`DOM analysis completed successfully. Found ${domAnalysis.elements.length} interactive elements`);
+        }
+        
         console.log('Sample elements found:', domAnalysis.elements.slice(0, 3).map(el => ({ type: el.type, selectors: el.selectors.slice(0, 2) })));
       } catch (error) {
         console.error('DOM analysis failed with error:', error.message);
@@ -137,7 +161,7 @@ class LLMService {
     const {
       testName = 'Generated Test',
       testType = 'UI Test',
-      baseUrl = process.env.BASE_URL || 'http://localhost:3000',
+      baseUrl = process.env.BASE_URL || 'http://localhost:5050',
       environment = null,
       domAnalysis = null
     } = options;
@@ -666,7 +690,7 @@ ${code}
               headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
-                'HTTP-Referer': 'http://localhost:3000',
+                'HTTP-Referer': 'http://localhost:5050',
                 'X-Title': 'AI Test Generator'
               },
               timeout: 30000
@@ -708,13 +732,16 @@ ${code}
 
   // Local Model Client (Ollama, LM Studio, etc.)
   createLocalClient({ apiKey, model, baseUrl }) {
+    // Normalize baseUrl to avoid double slashes
+    const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
+    
     return {
       async generate({ systemPrompt, userPrompt, temperature = 0.1, maxTokens = 4000 }) {
         return await RetryHelper.withRetry(async () => {
           try {
             // Try the newer Ollama API format first
             console.log('Trying Ollama /api/chat endpoint...');
-            const response = await axios.post(`${baseUrl}/api/chat`, {
+            const response = await axios.post(`${normalizedBaseUrl}/api/chat`, {
               model: model || 'llama2:latest',
               messages: [
                 {
@@ -740,7 +767,7 @@ ${code}
           } catch (error) {
             // Fallback to the older generate API
             console.log('Trying fallback /api/generate API format...', error.message);
-            const response = await axios.post(`${baseUrl}/api/generate`, {
+            const response = await axios.post(`${normalizedBaseUrl}/api/generate`, {
               model: model || 'llama2:latest',
               prompt: `${systemPrompt}\n\nUser: ${userPrompt}\n\nAssistant:`,
               stream: false,
@@ -788,15 +815,26 @@ ${code}
 
   // Test LLM connection
   async testConnection(provider, llmType, apiKey, model, baseUrl) {
-    const actualProvider = llmType === 'local' ? provider : provider;
-    const client = this.providers[actualProvider.toLowerCase()];
+    // Handle the case where provider is "local" and llmType is the actual provider name (e.g., "Ollama")
+    let actualProvider;
+    if (provider.toLowerCase() === 'local' && llmType) {
+      // Provider is "local", llmType contains the actual provider name
+      actualProvider = llmType.toLowerCase() === 'ollama' ? 'local' : llmType.toLowerCase();
+    } else {
+      // Legacy format: provider contains the actual provider name
+      actualProvider = provider.toLowerCase();
+    }
+    
+    const client = this.providers[actualProvider];
     
     if (!client) {
+      console.log(`Available providers: ${Object.keys(this.providers).join(', ')}`);
+      console.log(`Requested provider: ${provider}, llmType: ${llmType}, actualProvider: ${actualProvider}`);
       throw new Error(`Unsupported provider: ${actualProvider}`);
     }
 
     const llmClient = client({
-      apiKey: llmType === 'local' ? (apiKey || '') : apiKey,
+      apiKey: actualProvider === 'local' ? (apiKey || '') : apiKey,
       model: model || this.getDefaultModel(actualProvider),
       baseUrl: baseUrl || this.getDefaultBaseUrl(actualProvider)
     });

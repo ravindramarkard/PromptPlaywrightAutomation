@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FiPlus, FiEdit3, FiTrash2, FiEye, FiPlay, FiGrid, FiList, FiCode, FiZap, FiX } from 'react-icons/fi';
+import { FiPlus, FiEdit3, FiTrash2, FiEye, FiPlay, FiGrid, FiList, FiCode, FiZap, FiX, FiRefreshCw } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import api from '../config/axios';
 import CreatePromptModal from '../components/CreatePromptModal';
 import PromptDetailsModal from '../components/PromptDetailsModal';
+import ContinueExecutionModal from '../components/ContinueExecutionModal';
 
 // Simple wrapper to reuse CreatePromptModal for editing/copying by seeding initial values
 function EditPromptModal({ initial, onClose, onSubmit }) {
-  const [seed, setSeed] = React.useState(initial || null);
   return (
     <CreatePromptModal
       onClose={onClose}
       onSubmit={onSubmit}
-      initialData={seed}
+      initialData={initial || null}
       titleOverride={initial?._id ? 'Edit Prompt' : 'Copy Prompt'}
       submitLabel={initial?._id ? 'Update' : 'Create Copy'}
     />
@@ -259,6 +259,15 @@ const ActionButton = styled.button`
   &.danger:hover {
     background-color: #e74c3c;
     color: white;
+  }
+  
+  &.continue {
+    color: #27ae60;
+    
+    &:hover {
+      background-color: #27ae60;
+      color: white;
+    }
   }
 `;
 
@@ -520,6 +529,7 @@ const Prompts = () => {
   const [editingPrompt, setEditingPrompt] = useState(null);
   const [selectedPrompt, setSelectedPrompt] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showContinueModal, setShowContinueModal] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
   const [environments, setEnvironments] = useState([]);
   const [generatedCode, setGeneratedCode] = useState(null);
@@ -537,7 +547,8 @@ const Prompts = () => {
   const fetchPrompts = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/prompts');
+      // Fetch all prompts by setting a high limit to bypass pagination
+      const response = await api.get('/prompts?limit=1000');
       setPrompts(response.data.prompts || []);
     } catch (error) {
       console.error('Error fetching prompts:', error);
@@ -639,7 +650,8 @@ const Prompts = () => {
           testName: `Generated from ${prompt?.title}`,
           testType: prompt?.testType || 'UI Test',
           environment: selectedEnvironment, // Pass full environment object
-          parsedSteps: prompt?.metadata?.parsedSteps || [] // Send parsed steps for reference
+          parsedSteps: prompt?.metadata?.parsedSteps || [], // Send parsed steps for reference
+          baseUrl: prompt?.baseUrl // Pass the prompt's baseUrl to take priority
         });
       } else {
         // Use template-based generation (no LLM)
@@ -699,8 +711,78 @@ const Prompts = () => {
     }
   };
 
+  const checkSessionExists = async () => {
+    try {
+      const response = await api.get('/test-execution/check-session');
+      return response.data.exists;
+    } catch (error) {
+      console.error('Error checking session:', error);
+      return false;
+    }
+  };
+
+
+  const handleContinueExecution = async (promptId) => {
+    try {
+      const prompt = prompts.find(p => p._id === promptId);
+      if (!prompt) {
+        toast.error('Prompt not found');
+        return;
+      }
+
+      // Check if session exists
+      const sessionExists = await checkSessionExists();
+      if (!sessionExists) {
+        toast.warning('No active session found. Please run a login prompt first to create a session.');
+        return;
+      }
+
+      // Show continue execution modal
+      setSelectedPrompt(prompt);
+      setShowContinueModal(true);
+      
+    } catch (error) {
+      console.error('Error continuing execution:', error);
+      toast.error('Failed to continue execution');
+    }
+  };
+
   const handleEnvSelect = (env) => {
     setSelectedEnv(env);
+  };
+
+  const handleContinueExecutionFromModal = async (promptId, options) => {
+    try {
+      setGeneratingCode(true);
+      
+      const prompt = prompts.find(p => p._id === promptId);
+      if (!prompt) {
+        throw new Error('Prompt not found');
+      }
+      
+      const response = await api.post(`/code-generation/generate-and-run`, {
+        promptContent: prompt.promptContent,
+        testName: prompt.title,
+        testType: prompt.testType,
+        baseUrl: prompt.baseUrl || '',
+        useExistingSession: true,
+        environment: options.environment,
+        analysisResult: options.analysisResult
+      });
+
+      if (response.data.success) {
+        toast.success('Test generated and execution started successfully!');
+        // Refresh prompts to show updated data
+        fetchPrompts();
+      } else {
+        throw new Error(response.data.message || 'Failed to generate test');
+      }
+    } catch (error) {
+      console.error('Error in continue execution from modal:', error);
+      toast.error(`Failed to continue execution: ${error.message}`);
+    } finally {
+      setGeneratingCode(false);
+    }
   };
 
   const handleEnvConfirm = () => {
@@ -826,6 +908,13 @@ const Prompts = () => {
                   {generatingCode ? <FiZap /> : <FiCode />}
                 </ActionButton>
                 <ActionButton
+                  onClick={() => handleContinueExecution(prompt._id)}
+                  title="Continue Execution (Use Existing Session)"
+                  className="continue"
+                >
+                  <FiRefreshCw />
+                </ActionButton>
+                <ActionButton
                   onClick={() => handleDeletePrompt(prompt._id)}
                   title="Delete"
                   className="danger"
@@ -880,6 +969,13 @@ const Prompts = () => {
                   disabled={generatingCode}
                 >
                   {generatingCode ? <FiZap /> : <FiCode />}
+                </ActionButton>
+                <ActionButton
+                  onClick={() => handleContinueExecution(prompt._id)}
+                  title="Continue Execution (Use Existing Session)"
+                  className="continue"
+                >
+                  <FiRefreshCw />
                 </ActionButton>
                 <ActionButton
                   onClick={() => handleDeletePrompt(prompt._id)}
@@ -1016,6 +1112,19 @@ const Prompts = () => {
       )}
 
       {/* Loading Message */}
+      {/* Continue Execution Modal */}
+      {showContinueModal && selectedPrompt && (
+        <ContinueExecutionModal
+          isOpen={showContinueModal}
+          onClose={() => {
+            setShowContinueModal(false);
+            setSelectedPrompt(null);
+          }}
+          prompt={selectedPrompt}
+          onExecute={handleContinueExecutionFromModal}
+        />
+      )}
+
       {generatingCode && (
         <LoadingMessage>
           <LoadingSpinner />

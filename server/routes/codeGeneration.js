@@ -150,8 +150,8 @@ function launchBrowserTest(testFilePath, environment) {
       // Set environment variables for the test
       const env = {
         ...process.env,
-        PLAYWRIGHT_BROWSERS_PATH: './playwright-browsers',
-        BASE_URL: environment?.variables?.BASE_URL || 'http://localhost:3000',
+        PLAYWRIGHT_BROWSERS_PATH: 0,
+        BASE_URL: environment?.variables?.BASE_URL || 'http://localhost:5050',
         BROWSER_TYPE: environment?.variables?.BROWSER || 'chromium',
         HEADLESS_MODE: environment?.variables?.HEADLESS || 'false' // Set to false for headed mode
       };
@@ -233,6 +233,63 @@ const codeGenerator = new CodeGenerator();
 const fileStorage = new FileStorage();
 const llmService = new LLMService();
 
+// Helper function to add session management code to generated tests
+function addSessionManagementCode(testCode) {
+  console.log('=== addSessionManagementCode DEBUG ===');
+  console.log('addSessionManagementCode called with testCode length:', testCode.length);
+  console.log('testCode preview (first 200 chars):', testCode.substring(0, 200));
+  
+  // Add session management imports if not already present
+  if (!testCode.includes('createContextWithSession')) {
+    console.log('Adding session management imports...');
+    const importMatch = testCode.match(/import\s*{([^}]+)}\s*from\s*['"]@playwright\/test['"];?/);
+    if (importMatch) {
+      // Add session management import after Playwright imports
+      testCode = testCode.replace(
+        /import\s*{([^}]+)}\s*from\s*['"]@playwright\/test['"];?/,
+        `import { $1 } from '@playwright/test';\nimport { createContextWithSession, shouldSkipLogin, saveSessionAfterLogin } from '../test-utils/session-manager';`
+      );
+    } else {
+      // Add at the beginning if no imports found
+      testCode = `import { createContextWithSession, shouldSkipLogin, saveSessionAfterLogin } from '../test-utils/session-manager';\n${testCode}`;
+    }
+  }
+
+  // Add session management beforeEach if not already present
+  if (!testCode.includes('beforeEach')) {
+    const describeMatch = testCode.match(/(test\.describe\([^)]+\)\s*{)/);
+    if (describeMatch) {
+      const beforeEachCode = `
+  let page;
+  
+  test.beforeEach(async ({ browser }) => {
+    const context = await createContextWithSession(browser, { viewport: { width: 1920, height: 1080 } });
+    page = await context.newPage();
+  });`;
+      
+      testCode = testCode.replace(describeMatch[1], `${describeMatch[1]}${beforeEachCode}`);
+    }
+  }
+
+  // Add session check at the start of each test
+  if (!testCode.includes('shouldSkipLogin')) {
+    const testMatch = testCode.match(/(test\([^)]+\)\s*async\s*\([^)]*\)\s*=>\s*{)/);
+    if (testMatch) {
+      const sessionCheckCode = `
+    // Check if already logged in
+    const isLoggedIn = await shouldSkipLogin(page);
+    if (isLoggedIn) {
+      console.log('🚀 Already logged in, skipping login steps');
+      return;
+    }`;
+      
+      testCode = testCode.replace(testMatch[1], `${testMatch[1]}${sessionCheckCode}`);
+    }
+  }
+
+  return testCode;
+}
+
 // Parse prompt and return structured steps
 router.post('/parse-prompt', async (req, res) => {
   try {
@@ -257,7 +314,9 @@ router.post('/generate-llm-playwright', async (req, res) => {
       testName = 'Generated Test',
       testType = 'UI Test',
       environment,
-      parsedSteps = []
+      parsedSteps = [],
+      baseUrl,
+      useExistingSession = false
     } = req.body;
     
     if (!promptContent) {
@@ -279,14 +338,20 @@ router.post('/generate-llm-playwright', async (req, res) => {
     });
 
     // Create a comprehensive prompt for the LLM
-    const baseUrl = environment.variables?.BASE_URL || 'http://localhost:3000';
+    const finalBaseUrl = baseUrl || environment.variables?.BASE_URL || 'http://localhost:5050';
     const browserType = environment.variables?.BROWSER || 'chromium';
     const headlessMode = environment.variables?.HEADLESS || 'true';
+    
+    console.log('=== BASE URL DEBUG ===');
+    console.log('baseUrl from request:', baseUrl);
+    console.log('environment.variables?.BASE_URL:', environment.variables?.BASE_URL);
+    console.log('finalBaseUrl:', finalBaseUrl);
+    console.log('========================');
     
     const llmPrompt = `Generate a complete Playwright test file for: "${promptContent}"
 
 Test Name: ${testName}
-Base URL: ${baseUrl}
+Base URL: ${finalBaseUrl}
 Browser: ${browserType}
 Headless: ${headlessMode}
 
@@ -375,12 +440,18 @@ Return ONLY the complete TypeScript test file code without any explanations or m
       systemPrompt,
       testName,
       testType,
-      baseUrl: environment.variables?.BASE_URL || 'http://localhost:3000',
-      environment: fixedEnvironment
+      baseUrl: finalBaseUrl,
+      environment: fixedEnvironment,
+      parsedSteps: parsedSteps
     });
     
     // Clean the generated code
-    const testCode = cleanGeneratedCode(rawCode);
+    let testCode = cleanGeneratedCode(rawCode);
+    
+    // Add session management code if useExistingSession is true
+    if (useExistingSession) {
+      testCode = addSessionManagementCode(testCode);
+    }
     
     // Validate that we actually got code from LLM
     if (!testCode || testCode.trim().length === 0) {
@@ -678,7 +749,7 @@ router.post('/generate-e2e-suite', async (req, res) => {
 
 // Helper function to generate API test code
 function generateAPITestCode(endpoints, environment, options) {
-  const baseUrl = environment?.variables?.BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
+  const baseUrl = environment?.variables?.BASE_URL || process.env.BASE_URL || 'http://localhost:5050';
   const timeout = environment?.variables?.TIMEOUT || 30000;
   
   let code = `import { test, expect } from '@playwright/test';
@@ -724,7 +795,7 @@ test.describe('API Tests', () => {
 
 // Helper function to generate E2E test suite
 function generateE2ETestSuite(parsedPrompts, suiteName, environment, options) {
-  const baseUrl = environment?.variables?.BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
+  const baseUrl = environment?.variables?.BASE_URL || process.env.BASE_URL || 'http://localhost:5050';
   const timeout = environment?.variables?.TIMEOUT || 30000;
   
   let code = `import { test, expect } from '@playwright/test';
@@ -907,12 +978,19 @@ router.post('/generate-and-run', async (req, res) => {
 // Generate and immediately run a test
 router.post('/generate-and-run', async (req, res) => {
   try {
+    console.log('=== /generate-and-run endpoint called ===');
+    console.log('useExistingSession from request:', req.body.useExistingSession);
+    
     const {
       promptContent,
       testName = 'Generated Test',
       testType = 'UI Test',
       environment,
-      parsedSteps = []
+      parsedSteps = [],
+      baseUrl,
+      promptId,
+      useExistingSession = false,
+      analysisResult = null
     } = req.body;
     
     if (!promptContent) {
@@ -927,7 +1005,8 @@ router.post('/generate-and-run', async (req, res) => {
       testName,
       testType,
       environment: environment.name,
-      stepCount: parsedSteps.length
+      stepCount: parsedSteps.length,
+      baseUrl: baseUrl
     });
 
     // First, generate the test code
@@ -936,7 +1015,10 @@ router.post('/generate-and-run', async (req, res) => {
       testName,
       testType,
       environment,
-      parsedSteps
+      parsedSteps,
+      baseUrl,
+      useExistingSession,
+      analysisResult
     });
 
     if (!generateResponse.success) {
@@ -977,10 +1059,23 @@ router.post('/generate-and-run', async (req, res) => {
       '--timeout=30000'
     ];
 
+    // Add session management if using existing session
+    if (useExistingSession) {
+      const fs = require('fs-extra');
+      const sessionPath = path.join(__dirname, '../../storageState.json');
+      
+      if (await fs.pathExists(sessionPath)) {
+        console.log('Using existing session for execution:', sessionPath);
+        // The test will automatically use storageState.json due to playwright.config.js
+      } else {
+        console.log('No existing session found, proceeding with normal execution');
+      }
+    }
+
     console.log('Executing Playwright command:', `npx playwright ${playwrightArgs.join(' ')}`);
 
     // Set environment variable for local browsers
-    const env = { ...process.env, PLAYWRIGHT_BROWSERS_PATH: './playwright-browsers' };
+    const env = { ...process.env, PLAYWRIGHT_BROWSERS_PATH: './node_modules/playwright-core/.local-browsers' };
     console.log('Setting PLAYWRIGHT_BROWSERS_PATH to:', env.PLAYWRIGHT_BROWSERS_PATH);
 
     const playwrightProcess = spawn('npx', ['playwright', ...playwrightArgs], {
@@ -1058,32 +1153,87 @@ router.post('/generate-and-run', async (req, res) => {
 });
 
 // Helper function to generate LLM Playwright test
-async function generateLLMPlaywrightTest({ promptContent, testName, testType, environment, parsedSteps }) {
+async function generateLLMPlaywrightTest({ promptContent, testName, testType, environment, parsedSteps, baseUrl, useExistingSession = false, analysisResult = null }) {
   try {
+    console.log('=== generateLLMPlaywrightTest DEBUG ===');
+    console.log('useExistingSession parameter:', useExistingSession);
+    console.log('useExistingSession type:', typeof useExistingSession);
+    console.log('baseUrl parameter:', baseUrl);
+    console.log('baseUrl type:', typeof baseUrl);
+    console.log('baseUrl truthy:', !!baseUrl);
+    console.log('environment.variables?.BASE_URL:', environment.variables?.BASE_URL);
+    
     // Create a comprehensive prompt for the LLM
-    const baseUrl = environment.variables?.BASE_URL || 'http://localhost:3000';
+    // Use the provided baseUrl (from prompt) instead of environment
+    const finalBaseUrl = baseUrl || environment.variables?.BASE_URL || 'http://localhost:5050';
+    console.log('finalBaseUrl:', finalBaseUrl);
+    console.log('=====================================');
     const browserType = environment.variables?.BROWSER || 'chromium';
     const headlessMode = environment.variables?.HEADLESS || 'true';
     
+    const sessionManagementInstructions = useExistingSession ? `
+
+CRITICAL SESSION MANAGEMENT REQUIREMENTS - MUST BE INCLUDED:
+1. Add these imports at the top of the file:
+   import { createContextWithSession, shouldSkipLogin, saveSessionAfterLogin } from '../test-utils/session-manager';
+
+2. In beforeEach, create context with session:
+   test.beforeEach(async ({ browser }) => {
+     const context = await createContextWithSession(browser, { viewport: { width: 1920, height: 1080 } });
+     page = await context.newPage();
+   });
+
+3. At the start of each test, check if already logged in:
+   const isLoggedIn = await shouldSkipLogin(page);
+   if (isLoggedIn) {
+     console.log('🚀 Already logged in, skipping login steps');
+     return; // Skip the rest of the test if already logged in
+   }
+
+4. After successful login actions, save the session:
+   await saveSessionAfterLogin(page);
+   console.log('✅ Session saved for subsequent tests');
+
+MANDATORY: The test file MUST include all 4 points above. Do not generate a test without these session management features.` : '';
+
     const llmPrompt = `Generate a complete Playwright test file for: "${promptContent}"
 
 Test Name: ${testName}
-Base URL: ${baseUrl}
+Base URL: ${finalBaseUrl}
 Browser: ${browserType}
 Headless: ${headlessMode}
 
 ${parsedSteps.length > 0 ? `Steps to implement:
 ${parsedSteps.map((step, index) => `${index + 1}. ${step.originalText}`).join('\n')}` : ''}
 
+${analysisResult && analysisResult.elements && analysisResult.elements.length > 0 ? `DOM Analysis Results:
+The following elements were found during DOM analysis and should be used for more accurate selectors:
+${analysisResult.elements.map((element, index) => `${index + 1}. ${element.selector} - ${element.text || element.tagName || 'element'}`).join('\n')}
+
+Use these analyzed selectors when possible for more reliable test automation.` : ''}
+
 Create a complete TypeScript Playwright test file with:
 - Proper imports: import { test, expect } from '@playwright/test' and import { allure } from 'allure-playwright'
-- Environment variables: BASE_URL, BROWSER_TYPE, HEADLESS_MODE
+- Use the EXACT Base URL provided above (${finalBaseUrl}) - do NOT use process.env.BASE_URL
 - Test structure: describe block with beforeEach, test, and afterEach
 - Error handling: try-catch blocks with screenshot capture on failure
 - Allure reporting: tags, attachments, and proper metadata
 - Proper selectors: use data-testid when possible, fallback to other selectors
 - Wait conditions: use page.waitForSelector() for element visibility
-- Meaningful assertions: verify the test outcome
+- Meaningful assertions: verify the test outcome${sessionManagementInstructions}
+
+CRITICAL REQUIREMENT: Start your test file with this exact line:
+const BASE_URL = '${finalBaseUrl}';
+
+DO NOT use process.env.BASE_URL anywhere in the code. Always use the constant BASE_URL = '${finalBaseUrl}' instead.
+
+IMPORTANT: The test should use the exact baseUrl provided (${finalBaseUrl}) and NOT rely on environment variables. This ensures the test uses the prompt's baseUrl regardless of environment settings.
+
+EXAMPLE of what NOT to do:
+const BASE_URL = process.env.BASE_URL || '${finalBaseUrl}'; // WRONG
+
+EXAMPLE of what to do:
+const BASE_URL = '${finalBaseUrl}'; // CORRECT
 
 Return ONLY the complete TypeScript code without explanations or markdown.`;
 
@@ -1113,6 +1263,15 @@ REQUIREMENTS:
 - Add proper test cleanup in afterEach
 - Include Allure tags and attachments
 
+${useExistingSession ? `
+CRITICAL SESSION MANAGEMENT - MUST INCLUDE:
+- Import session management utilities: import { createContextWithSession, shouldSkipLogin, saveSessionAfterLogin } from '../test-utils/session-manager';
+- Use createContextWithSession in beforeEach to create context with existing session
+- Check shouldSkipLogin at test start and skip login if already authenticated
+- Call saveSessionAfterLogin after successful login actions
+- These features are MANDATORY and must be included in the generated code
+` : ''}
+
 Return ONLY the complete TypeScript test file code without any explanations or markdown formatting.`;
 
     const userPrompt = llmPrompt;
@@ -1123,12 +1282,18 @@ Return ONLY the complete TypeScript test file code without any explanations or m
       systemPrompt,
       testName,
       testType,
-      baseUrl: environment.variables?.BASE_URL || 'http://localhost:3000',
-      environment: fixedEnvironment
+      baseUrl: finalBaseUrl,
+      environment: fixedEnvironment,
+      parsedSteps: parsedSteps
     });
     
     // Clean the generated code
-    const testCode = cleanGeneratedCode(rawCode);
+    let testCode = cleanGeneratedCode(rawCode);
+    
+    // Add session management code if useExistingSession is true
+    if (useExistingSession) {
+      testCode = addSessionManagementCode(testCode);
+    }
     
     // Validate that we actually got code from LLM
     if (!testCode || testCode.trim().length === 0) {

@@ -180,7 +180,7 @@ router.post('/:id/generate-test', async (req, res) => {
       environment = await fileStorage.getEnvironmentById(environmentId);
     }
     
-    // Generate the test code
+    // Generate the test code using prompt's BASE_URL
     const testCode = await codeGenerator.generatePlaywrightSpec(
       {
         parsedSteps: prompt.metadata.parsedSteps,
@@ -197,7 +197,7 @@ router.post('/:id/generate-test', async (req, res) => {
       {
         testName: testName || prompt.title,
         testType: prompt.testType,
-        baseUrl: prompt.baseUrl || process.env.BASE_URL,
+        baseUrl: prompt.baseUrl, // Use prompt's BASE_URL instead of environment
         tags: prompt.tags || [],
         ...options
       }

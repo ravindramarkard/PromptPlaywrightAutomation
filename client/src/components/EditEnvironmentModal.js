@@ -339,8 +339,8 @@ const EditEnvironmentModal = ({ isOpen, onClose, environment, onUpdate }) => {
     setTestingLLM(true);
     try {
       const response = await api.post('/environments/test-llm-connection', {
-        provider: provider === 'local' ? llmProvider : provider,
-        llmType: provider === 'local' ? 'local' : provider,
+        provider: provider === 'local' ? 'local' : provider,
+        llmType: provider === 'local' ? llmProvider : provider,
         apiKey: provider === 'local' ? (apiKey || '') : apiKey,
         model,
         baseUrl

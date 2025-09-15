@@ -59,7 +59,7 @@ class CodeGenerator {
     const {
       testName = 'Generated Test',
       testType = 'UI Test',
-      baseUrl = process.env.BASE_URL || environment?.variables?.BASE_URL || 'http://localhost:3000',
+      baseUrl = process.env.BASE_URL || environment?.variables?.BASE_URL || 'http://localhost:5050',
       timeout = environment?.variables?.TIMEOUT || 90000,
       browser = environment?.variables?.BROWSER || 'chromium',
       headless = environment?.variables?.HEADLESS !== false,
@@ -96,7 +96,7 @@ class CodeGenerator {
       const baseTemplate = this.buildSpecContent({
         testName: options.testName || 'Generated Test',
         testType: options.testType || 'UI Test',
-        baseUrl: options.baseUrl || process.env.BASE_URL || 'http://localhost:3000',
+        baseUrl: options.baseUrl || process.env.BASE_URL || 'http://localhost:5050',
         timeout: options.timeout || 30000,
         browser: options.browser || 'chromium',
         headless: options.headless !== false,
@@ -128,7 +128,7 @@ class CodeGenerator {
       return this.buildSpecContent({
         testName: options.testName || 'Generated Test',
         testType: options.testType || 'UI Test',
-        baseUrl: options.baseUrl || process.env.BASE_URL || 'http://localhost:3000',
+        baseUrl: options.baseUrl || process.env.BASE_URL || 'http://localhost:5050',
         timeout: options.timeout || 30000,
         browser: options.browser || 'chromium',
         headless: options.headless !== false,
@@ -285,7 +285,7 @@ Return only the enhanced Playwright test code, no explanations or markdown forma
       addTestDescription = true, 
       includeTestSteps = true,
       timeout = 90000,
-      baseUrl = 'http://localhost:3000',
+      baseUrl = 'http://localhost:5050',
       tags = []
     } = options;
     
@@ -410,7 +410,7 @@ Return only the enhanced Playwright test code, no explanations or markdown forma
       await page.waitForLoadState('networkidle').catch(() => console.log('Network idle timeout, continuing...'));
 `;
     } else {
-      const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+      const baseUrl = process.env.BASE_URL || 'http://localhost:5050';
       const path = target.startsWith('/') ? target : `/${target}`;
       return `      await page.goto('${baseUrl}${path}', { waitUntil: 'domcontentloaded' });
       await page.waitForLoadState('networkidle').catch(() => console.log('Network idle timeout, continuing...'));

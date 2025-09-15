@@ -94,7 +94,7 @@ A comprehensive test automation framework that combines traditional testing with
    
    # Or start individually
    npm run server  # Backend on port 5000
-   npm run client  # Frontend on port 3000
+   npm run client  # Frontend on port 5050
    ```
 
 ## Usage
@@ -166,7 +166,7 @@ NODE_ENV=development
 MONGODB_URI=mongodb://localhost:27017/ai-test-generator
 
 # Base URL for tests
-BASE_URL=http://localhost:3000
+BASE_URL=http://localhost:5050
 
 # OpenAI Configuration (Optional)
 OPENAI_API_KEY=your_openai_api_key_here

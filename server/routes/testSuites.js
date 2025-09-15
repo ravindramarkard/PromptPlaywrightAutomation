@@ -3,6 +3,7 @@ const router = express.Router();
 const FileStorage = require('../services/FileStorage');
 const fs = require('fs-extra');
 const path = require('path');
+const { glob } = require('glob');
 
 const fileStorage = new FileStorage();
 
@@ -59,17 +60,11 @@ async function scanGeneratedTests() {
   
   try {
     // Use glob pattern to find all .spec.ts files
-    const glob = require('glob');
     const pattern = path.join(__dirname, '../../tests/projects/**/*.spec.ts');
     
     console.log('Scanning for test files with pattern:', pattern);
     
-    const testFiles = await new Promise((resolve, reject) => {
-      glob(pattern, (err, files) => {
-        if (err) reject(err);
-        else resolve(files);
-      });
-    });
+    const testFiles = await glob(pattern);
     
     console.log(`Found ${testFiles.length} test files`);
     
@@ -230,14 +225,7 @@ router.put('/:id/spec', async (req, res) => {
       });
     }
     
-    // Create backup of original file
-    const backupPath = testSuite.filePath + '.backup.' + Date.now();
-    try {
-      await fs.copy(testSuite.filePath, backupPath);
-      console.log(`Backup created: ${backupPath}`);
-    } catch (backupError) {
-      console.warn('Could not create backup:', backupError.message);
-    }
+    // Update file directly without backup
     
     // Write the updated spec content
     try {
@@ -251,7 +239,6 @@ router.put('/:id/spec', async (req, res) => {
         message: 'Spec file updated successfully',
         testName: testName || testSuite.name,
         filePath: testSuite.filePath,
-        backupPath: backupPath,
         updatedAt: stats.mtime.toISOString(),
         specContent: specContent
       });
@@ -265,26 +252,127 @@ router.put('/:id/spec', async (req, res) => {
   }
 });
 
-// Create new test suite
+
+// Create new test suite (reference-based only)
 router.post('/', async (req, res) => {
   try {
-    const testSuite = await fileStorage.createTestSuite(req.body);
-    res.status(201).json(testSuite);
+    const { suiteName, description, testType, selectedTestCases } = req.body;
+    
+    if (!suiteName || !selectedTestCases || selectedTestCases.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Suite name and test cases are required'
+      });
+    }
+
+    // Generate unique ID for the test suite
+    const testSuiteId = `suite-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Create test suite with references only (no file copying)
+    const testSuiteData = {
+      id: testSuiteId,
+      name: suiteName,
+      description: description || '',
+      testType: testType || 'UI',
+      testCases: selectedTestCases.map(testCase => ({
+        ...testCase,
+        isReference: true // Mark all as references
+      })),
+      createdAt: new Date().toISOString(),
+      status: 'ready',
+      totalTests: selectedTestCases.length,
+      lastRun: null,
+      results: {
+        passed: 0,
+        failed: 0,
+        skipped: 0,
+        total: selectedTestCases.length
+      }
+    };
+
+    // Get existing test suites
+    const existingSuites = fileStorage.getTestSuites();
+    
+    // Add new test suite
+    existingSuites.push(testSuiteData);
+    
+    // Save back to file
+    const saveResult = fileStorage.saveTestSuites(existingSuites);
+    
+    if (saveResult) {
+      res.status(201).json({
+        success: true,
+        message: 'Test suite created successfully with references',
+        testSuite: testSuiteData
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to save test suite to file',
+        message: 'Could not save test suite data'
+      });
+    }
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Error creating test suite:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create test suite',
+      message: error.message
+    });
   }
 });
 
 // Update test suite
 router.put('/:id', async (req, res) => {
   try {
-    const testSuite = await fileStorage.updateTestSuite(req.params.id, req.body);
-    if (!testSuite) {
-      return res.status(404).json({ error: 'Test suite not found' });
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    // Get existing test suites
+    const existingSuites = fileStorage.getTestSuites();
+    
+    // Find the test suite to update
+    const suiteIndex = existingSuites.findIndex(suite => suite.id === id);
+    
+    if (suiteIndex === -1) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Test suite not found' 
+      });
     }
-    res.json(testSuite);
+    
+    // Update the test suite
+    const updatedSuite = {
+      ...existingSuites[suiteIndex],
+      ...updateData,
+      updatedAt: new Date().toISOString()
+    };
+    
+    existingSuites[suiteIndex] = updatedSuite;
+    
+    // Save back to file
+    const saveResult = fileStorage.saveTestSuites(existingSuites);
+    
+    if (saveResult) {
+      res.json({
+        success: true,
+        message: 'Test suite updated successfully',
+        testSuite: updatedSuite
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to save test suite to file',
+        message: 'Could not save test suite data'
+      });
+    }
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Error updating test suite:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update test suite',
+      message: error.message
+    });
   }
 });
 
@@ -293,12 +381,38 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Find the test suite in the generated tests
+    // First check if it's a new format test suite (created through UI)
+    const existingSuites = fileStorage.getTestSuites();
+    const suiteIndex = existingSuites.findIndex(suite => suite.id === id);
+    
+    if (suiteIndex !== -1) {
+      // It's a new format test suite, remove it from the file
+      existingSuites.splice(suiteIndex, 1);
+      const saveResult = fileStorage.saveTestSuites(existingSuites);
+      
+      if (saveResult) {
+        res.json({ 
+          success: true,
+          message: 'Test suite deleted successfully' 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false,
+          error: 'Failed to save changes to file' 
+        });
+      }
+      return;
+    }
+    
+    // If not found in new format, check generated tests
     const testSuites = await scanGeneratedTests();
     const testSuite = testSuites.find(ts => ts.id === id);
     
     if (!testSuite) {
-      return res.status(404).json({ error: 'Test suite not found' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Test suite not found' 
+      });
     }
     
     // Delete the actual test file
@@ -314,13 +428,7 @@ router.delete('/:id', async (req, res) => {
       
       // Also delete any backup files
       const backupPattern = `${testSuite.filePath}.backup.*`;
-      const glob = require('glob');
-      const backupFiles = await new Promise((resolve, reject) => {
-        glob(backupPattern, (err, files) => {
-          if (err) reject(err);
-          else resolve(files);
-        });
-      });
+      const backupFiles = await glob(backupPattern);
       
       for (const backupFile of backupFiles) {
         await fs.remove(backupFile);
@@ -332,10 +440,17 @@ router.delete('/:id', async (req, res) => {
     generatedTestsCache = null;
     lastScanTime = 0;
     
-    res.json({ message: 'Test suite deleted successfully' });
+    res.json({ 
+      success: true,
+      message: 'Test suite deleted successfully' 
+    });
   } catch (error) {
     console.error('Error deleting test suite:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to delete test suite',
+      message: error.message
+    });
   }
 });
 

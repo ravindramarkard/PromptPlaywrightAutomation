@@ -140,7 +140,7 @@
       "timestamp": "2025-09-04T17:18:42.196Z"
     },
     "createdAt": "2025-09-04T17:18:42.196Z",
-    "updatedAt": "2025-09-04T20:42:27.821Z"
+    "updatedAt": "2025-09-13T11:48:25.734Z"
   },
   {
     "_id": "24271009-3215-48f1-950f-563816b678b8",
@@ -157,14 +157,7 @@
     "modelName": "Default Model",
     "promptId": "2a534a22-3fca-4565-96ca-4e4f51e3ccbf",
     "status": "draft",
-    "generatedTests": [
-      {
-        "testId": "06fa9770-2aa4-4eeb-9007-6ac67fa2f0e0",
-        "testName": "API Login Test",
-        "filePath": "tests/projects/default-project/models/default-model/Default Model/prompts/2a534a22-3fca-4565-96ca-4e4f51e3ccbf/api-login-test.spec.ts",
-        "createdAt": "2025-09-04T17:21:58.485Z"
-      }
-    ],
+    "generatedTests": [],
     "metadata": {
       "parsedSteps": [
         {
@@ -180,46 +173,13 @@
       "timestamp": "2025-09-04T17:21:52.597Z"
     },
     "createdAt": "2025-09-04T17:21:52.598Z",
-    "updatedAt": "2025-09-04T17:21:58.485Z"
-  },
-  {
-    "_id": "c081f039-5a73-4d29-b693-2af609d7207e",
-    "title": "Frontend Test",
-    "description": "Test frontend functionality",
-    "promptContent": "Navigate to the homepage, click on the login button, fill username with test@example.com, fill password with password123, click submit",
-    "testType": "UI Test",
-    "tags": [
-      "frontend",
-      "login"
-    ],
-    "projectId": "frontend-test",
-    "modelId": "frontend-model",
-    "modelName": "Frontend Model",
-    "promptId": "2098184a-c122-4159-82e7-e879dd0ecd98",
-    "status": "draft",
-    "generatedTests": [],
-    "metadata": {
-      "parsedSteps": [
-        {
-          "stepNumber": 1,
-          "originalText": "Navigate to the homepage, click on the login button, fill username with test@example.com, fill password with password123, click submit",
-          "action": "navigate",
-          "target": "button",
-          "value": null,
-          "assertion": null,
-          "waitTime": null
-        }
-      ],
-      "timestamp": "2025-09-04T18:13:24.631Z"
-    },
-    "createdAt": "2025-09-04T18:13:24.631Z",
-    "updatedAt": "2025-09-04T18:52:55.431Z"
+    "updatedAt": "2025-09-11T21:09:50.499Z"
   },
   {
     "_id": "34714e90-e305-4f94-b83e-67d5ef700193",
     "title": "logintest",
     "description": "logintest",
-    "promptContent": "Open page https://practicetestautomation.com/practice-test-login/\nType username student into Username field\nType password Password123 into Password field\nPush Submit button\nVerify new page URL contains practicetestautomation.com/logged-in-successfully/\nVerify new page contains expected text ('Congratulations' or 'successfully logged in')\nVerify button Log out is displayed on the new page",
+    "promptContent": "Open page\nType username student into Username field\nType password Password123 into Password field\nPush Submit button\nVerify new page URL contains practicetestautomation.com/logged-in-successfully/\nVerify new page contains expected text ('Congratulations' or 'successfully logged in')\nVerify button Log out is displayed on the new page",
     "testType": "UI Test",
     "tags": [
       "smoke"
@@ -237,9 +197,9 @@
       "parsedSteps": [
         {
           "stepNumber": 1,
-          "originalText": "Open page https://practicetestautomation.com/practice-test-login/",
+          "originalText": "Open page",
           "action": "navigate",
-          "target": "button",
+          "target": "page",
           "value": null,
           "assertion": null,
           "waitTime": null
@@ -299,10 +259,10 @@
           "waitTime": null
         }
       ],
-      "timestamp": "2025-09-07T15:47:31.977Z"
+      "timestamp": "2025-09-13T13:08:21.027Z"
     },
     "createdAt": "2025-09-07T15:47:31.978Z",
-    "updatedAt": "2025-09-07T15:47:31.978Z"
+    "updatedAt": "2025-09-13T13:08:21.028Z"
   },
   {
     "_id": "f6c93706-9165-4b03-85c7-1532dd312166",
@@ -1040,5 +1000,236 @@
     },
     "createdAt": "2025-09-11T08:25:03.292Z",
     "updatedAt": "2025-09-11T08:25:03.292Z"
+  },
+  {
+    "_id": "573660b6-5f9e-4558-ac52-dd22e8675b87",
+    "title": "google search",
+    "description": "google search",
+    "promptContent": "Navigate to google.com\nSearch with \"AI Tech\"\nClose the browser",
+    "testType": "UI Test",
+    "tags": [
+      "sanity"
+    ],
+    "additionalContext": "",
+    "baseUrl": "https://www.google.com/",
+    "additionalInformation": "",
+    "projectId": "default-project",
+    "modelId": "default-model",
+    "modelName": "Default Model",
+    "promptId": "1fe01346-261a-4438-bdb4-c418e0e90bfb",
+    "status": "draft",
+    "generatedTests": [],
+    "metadata": {
+      "parsedSteps": [
+        {
+          "stepNumber": 1,
+          "originalText": "Navigate to google.com",
+          "action": "navigate",
+          "target": "Navigate google.com",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 2,
+          "originalText": "Search with \"AI Tech\"",
+          "action": "unknown",
+          "target": "input",
+          "value": "AI Tech",
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 3,
+          "originalText": "Close the browser",
+          "action": "upload",
+          "target": "table",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        }
+      ],
+      "timestamp": "2025-09-11T19:36:16.177Z"
+    },
+    "createdAt": "2025-09-11T19:36:16.178Z",
+    "updatedAt": "2025-09-11T19:36:16.178Z"
+  },
+  {
+    "_id": "016d6fa9-92d2-49d3-9905-35d5f482a9ee",
+    "title": "HR Test (Copy) Login Only",
+    "description": "HR Test",
+    "promptContent": "1. Navigate to this URL:https://opensource-demo.orangehrmlive.com/web/index.php/auth/login \n2. Use credentials from given website \n3. Validate successful login \n4. Close the browser\n",
+    "testType": "UI Test",
+    "tags": [
+      "smoke"
+    ],
+    "additionalContext": "",
+    "baseUrl": "https://opensource-demo.orangehrmlive.com/web/index.php/auth/login",
+    "additionalInformation": "",
+    "projectId": "default-project",
+    "modelId": "default-model",
+    "modelName": "Default Model",
+    "promptId": "fa2f2114-cce1-489e-a23c-792d3d9d4c6a",
+    "status": "draft",
+    "generatedTests": [],
+    "metadata": {
+      "parsedSteps": [
+        {
+          "stepNumber": 1,
+          "originalText": "1. Navigate to this URL:https://opensource-demo.orangehrmlive.com/web/index.php/auth/login",
+          "action": "navigate",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 2,
+          "originalText": "2. Use credentials from given website",
+          "action": "unknown",
+          "target": "Use credentials from given website",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 3,
+          "originalText": "3. Validate successful login",
+          "action": "assert",
+          "target": "button",
+          "value": null,
+          "assertion": "successful login",
+          "waitTime": null
+        },
+        {
+          "stepNumber": 4,
+          "originalText": "4. Close the browser",
+          "action": "upload",
+          "target": "table",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        }
+      ],
+      "timestamp": "2025-09-13T14:39:26.126Z"
+    },
+    "createdAt": "2025-09-13T14:39:26.126Z",
+    "updatedAt": "2025-09-13T14:39:26.126Z"
+  },
+  {
+    "_id": "afe68218-7dbe-4c73-9bf7-0da002deff9f",
+    "title": "HR Test (Copy)- Admin Case",
+    "description": "HR Test",
+    "promptContent": "\n1. Click to Admin from left side bar \n2. Click on Add button \n3. Select User Role: Admin \n4. Enter Employee Name : FirstAutomation123 \n5. Select Status: Enabled \n6. Enter User name :ravi11\n7. Enter password: ravi12311\n8. Enter confirm Password: ravi123343\n9 . Click on save button \n10.  Validate successful user\n",
+    "testType": "UI Test",
+    "tags": [
+      "smoke"
+    ],
+    "additionalContext": "",
+    "baseUrl": "https://opensource-demo.orangehrmlive.com/web/index.php/auth/login",
+    "additionalInformation": "",
+    "projectId": "default-project",
+    "modelId": "default-model",
+    "modelName": "Default Model",
+    "promptId": "112a94d8-8ae0-4ffd-9f68-2375f5f33814",
+    "status": "draft",
+    "generatedTests": [],
+    "metadata": {
+      "parsedSteps": [
+        {
+          "stepNumber": 1,
+          "originalText": "1. Click to Admin from left side bar",
+          "action": "click",
+          "target": "Admin from left side bar",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 2,
+          "originalText": "2. Click on Add button",
+          "action": "click",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 3,
+          "originalText": "3. Select User Role: Admin",
+          "action": "click",
+          "target": "dropdown",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 4,
+          "originalText": "4. Enter Employee Name : FirstAutomation123",
+          "action": "fill",
+          "target": "Employee Name FirstAutomation123",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 5,
+          "originalText": "5. Select Status: Enabled",
+          "action": "click",
+          "target": "dropdown",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 6,
+          "originalText": "6. Enter User name :ravi11",
+          "action": "fill",
+          "target": "User name :ravi11",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 7,
+          "originalText": "7. Enter password: ravi12311",
+          "action": "fill",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 8,
+          "originalText": "8. Enter confirm Password: ravi123343",
+          "action": "fill",
+          "target": "input",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 9,
+          "originalText": "9 . Click on save button",
+          "action": "click",
+          "target": "button",
+          "value": null,
+          "assertion": null,
+          "waitTime": null
+        },
+        {
+          "stepNumber": 10,
+          "originalText": "10.  Validate successful user",
+          "action": "assert",
+          "target": "10. successful user",
+          "value": null,
+          "assertion": "successful user",
+          "waitTime": null
+        }
+      ],
+      "timestamp": "2025-09-13T15:13:36.135Z"
+    },
+    "createdAt": "2025-09-13T15:13:36.136Z",
+    "updatedAt": "2025-09-13T15:13:36.136Z"
   }
 ]

@@ -91,7 +91,7 @@ class TestExecutor {
 
   async launchBrowser(browserType, headless) {
     // Set the browsers path to use local installation
-    process.env.PLAYWRIGHT_BROWSERS_PATH = path.resolve(__dirname, '../../playwright-browsers');
+    process.env.PLAYWRIGHT_BROWSERS_PATH = path.resolve(__dirname, '../../node_modules/playwright-core/.local-browsers');
     
     const browserMap = {
       'chromium': chromium,
@@ -132,7 +132,7 @@ class TestExecutor {
       }
       
       // Execute a basic test flow
-      const baseUrl = environment?.BASE_URL || 'http://localhost:3000';
+      const baseUrl = environment?.BASE_URL || 'http://localhost:5050';
       
       // Step 1: Navigate to the page
       const step1Start = Date.now();
@@ -294,7 +294,7 @@ class TestExecutor {
   }
 
   async executeStep(step, environment) {
-    const baseUrl = environment?.BASE_URL || 'http://localhost:3000';
+    const baseUrl = environment?.BASE_URL || 'http://localhost:5050';
     
     switch (step.type) {
       case 'navigate':

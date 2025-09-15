@@ -226,7 +226,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Login Test', () => {
   test('should execute test steps', async ({ page }) => {
-    await page.goto('http://localhost:3000');
+    await page.goto('http://localhost:5050');
     await page.click('login');
     await page.fill('username', 'user@example.com');
     await page.fill('password', 'password123');
@@ -247,7 +247,7 @@ test.describe('Login Test', () => {
     allure.story('Login Flow');
     
     test.setTimeout(30000);
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.BASE_URL || 'http://localhost:5050';
     await page.goto(baseUrl);
   });
 
@@ -315,7 +315,7 @@ npm install axios  # Already installed
 ### 2. Configure Environment Variables
 ```bash
 # .env
-BASE_URL=http://localhost:3000
+BASE_URL=http://localhost:5050
 OPENAI_API_KEY=sk-... # Optional
 ANTHROPIC_API_KEY=sk-ant-... # Optional
 ```

@@ -516,9 +516,16 @@ const APITestGenerator = () => {
 
     if (useLLM && selectedEnvironment) {
       const selectedEnv = environments.find(env => env._id === selectedEnvironment);
-      if (!selectedEnv || !selectedEnv.llmConfiguration || !selectedEnv.llmConfiguration.apiKey) {
+      if (!selectedEnv || !selectedEnv.llmConfiguration || !selectedEnv.llmConfiguration.enabled) {
         setError('Selected environment does not have valid LLM configuration');
         toast.error('Selected environment does not have valid LLM configuration');
+        return;
+      }
+      
+      // For non-local models, check if API key is provided
+      if (selectedEnv.llmConfiguration.provider !== 'local' && !selectedEnv.llmConfiguration.apiKey) {
+        setError('Selected environment requires an API key for non-local models');
+        toast.error('Selected environment requires an API key for non-local models');
         return;
       }
     }
@@ -888,7 +895,7 @@ const APITestGenerator = () => {
                 >
                   <option value="">Choose an LLM-enabled environment</option>
                   {environments
-                    .filter(env => env.llmConfiguration && env.llmConfiguration.apiKey)
+                    .filter(env => env.llmConfiguration && env.llmConfiguration.enabled)
                     .map((env) => (
                     <option key={env._id} value={env._id}>
                       {env.name} - {env.baseUrl}

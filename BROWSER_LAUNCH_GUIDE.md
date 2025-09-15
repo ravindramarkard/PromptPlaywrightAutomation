@@ -120,7 +120,7 @@ if (browserLaunch) {
 ```javascript
 {
   "variables": {
-    "BASE_URL": "http://localhost:3000",
+    "BASE_URL": "http://localhost:5050",
     "BROWSER": "chromium",
     "HEADLESS": "false",
     "TIMEOUT": "30000"

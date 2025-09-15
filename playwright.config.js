@@ -6,6 +6,10 @@ const { defineConfig, devices } = require('@playwright/test');
  */
 module.exports = defineConfig({
   testDir: './tests',
+
+  /* Global setup for session management - only when not running test suites */
+  globalSetup: process.env.SKIP_GLOBAL_SETUP ? undefined : require.resolve('./global-setup.ts'),
+
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -15,7 +19,6 @@ module.exports = defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  
   reporter: [
     ['html'],
     ['allure-playwright', { 
@@ -29,6 +32,7 @@ module.exports = defineConfig({
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: process.env.BASE_URL,
 
+    storageState: 'storageState.json', // 🔑 reuse logged-in session
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
     
@@ -56,7 +60,15 @@ module.exports = defineConfig({
         '--no-first-run',
         '--no-default-browser-check',
         '--disable-gpu-sandbox',
-        '--disable-software-rasterizer'
+        '--disable-software-rasterizer',
+        '--disable-dev-shm-usage',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor',
+        '--disable-background-timer-throttling',
+        '--disable-renderer-backgrounding',
+        '--disable-backgrounding-occluded-windows'
       ],
       ignoreDefaultArgs: ['--enable-automation'],
     },
@@ -109,6 +121,32 @@ module.exports = defineConfig({
           // ],
           ignoreDefaultArgs: ['--enable-automation'],
         }
+      },
+    },
+
+    // API Testing Project
+    {
+      name: 'api',
+      testDir: './server/tests',
+      testMatch: '**/generated/api-tests/**/*.spec.ts',
+      use: {
+        // API tests don't need browser-specific settings
+        baseURL: process.env.API_URL || 'https://fakerestapi.azurewebsites.net',
+        // API-specific timeouts
+        actionTimeout: 30000,
+        navigationTimeout: 30000,
+        // No browser launch options needed for API tests
+        launchOptions: undefined,
+        // No viewport needed for API tests
+        viewport: undefined,
+        // No storage state needed for API tests
+        storageState: undefined,
+        // No trace needed for API tests
+        trace: 'off',
+        // No screenshot needed for API tests
+        screenshot: 'off',
+        // No video needed for API tests
+        video: 'off',
       },
     },
 

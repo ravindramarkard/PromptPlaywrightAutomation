@@ -80,7 +80,7 @@ const Sidebar = () => {
   const navItems = [
     { path: '/dashboard', icon: FiHome, text: 'Dashboard' },
     { path: '/prompts', icon: FiEdit3, text: 'Prompts' },
-    { path: '/test-suites', icon: FiFolder, text: 'Test Suites' },
+    { path: '/test-suites', icon: FiFolder, text: 'Test Management' },
     { path: '/results', icon: FiBarChart2, text: 'Results' },
     { path: '/environments', icon: FiSettings, text: 'Environments' },
     { path: '/api-test-generator', icon: FiCpu, text: 'API Test Generator' },

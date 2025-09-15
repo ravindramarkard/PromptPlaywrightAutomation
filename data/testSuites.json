@@ -1,119 +1,179 @@
 [
   {
-    "_id": "e73dce62-2252-4756-a3f6-23a0efc6f04b",
-    "name": "dfsd",
-    "description": "fdsf",
+    "id": "suite-1757783590768-ewzjw4ixv",
+    "name": "newsuite",
+    "description": "fsfs",
+    "testType": "UI",
     "testCases": [
-      "projects-default-project-models-default-model-generated-from-logintest"
-    ],
-    "type": "custom",
-    "status": "active",
-    "createdAt": "2025-09-07T18:16:06.944Z",
-    "updatedAt": "2025-09-07T18:16:06.944Z"
-  },
-  {
-    "_id": "4335ee3e-6136-4c2d-b554-17c08d0298e1",
-    "name": "all test",
-    "description": "alltest",
-    "tests": [
       {
-        "_id": "e73dce62-2252-4756-a3f6-23a0efc6f04b",
-        "name": "dfsd",
-        "description": "fdsf",
-        "testCases": [
-          "projects-default-project-models-default-model-generated-from-logintest"
-        ],
-        "type": "custom",
-        "status": "active",
-        "createdAt": "2025-09-07T18:16:06.944Z",
-        "updatedAt": "2025-09-07T18:16:06.944Z"
-      },
-      {
-        "id": "projects-default-project-models-default-model-generated-from-logintest",
-        "name": "generated-from-logintest",
-        "description": "Generated test from projects/models",
-        "type": "UI Test",
-        "tags": [],
-        "project": "projects",
-        "model": "models",
-        "promptId": "default-model",
-        "filePath": "/Users/ravindramarkard/Desktop/latest Working Frameworks/ChatgptKindPrompt/tests/projects/default-project/models/default-model/Default Model/prompts/73b956bf-30a2-4972-a33f-d42c6803bc9b/generated-from-logintest.spec.ts",
-        "relativePath": "../tests/projects/default-project/models/default-model/Default Model/prompts/73b956bf-30a2-4972-a33f-d42c6803bc9b/generated-from-logintest.spec.ts",
-        "createdAt": "2025-09-07T17:56:57.338Z",
-        "updatedAt": "2025-09-07T17:56:57.338Z",
-        "status": "active",
-        "isGenerated": true,
-        "source": "Prompts"
-      },
-      {
-        "id": "projects-enhanced-ai-models-llm-generated-hr-login-test-fixed",
-        "name": "hr-login-test-fixed",
-        "description": "Generated test from projects/models",
-        "type": "HR Test",
-        "tags": [],
-        "project": "projects",
-        "model": "models",
-        "promptId": "llm-generated",
-        "filePath": "/Users/ravindramarkard/Desktop/latest Working Frameworks/ChatgptKindPrompt/tests/projects/enhanced-ai/models/llm-generated/LLM Generated/prompts/702b2324-291a-44c9-a272-7531abbf80db/hr-login-test-fixed.spec.ts",
-        "relativePath": "../tests/projects/enhanced-ai/models/llm-generated/LLM Generated/prompts/702b2324-291a-44c9-a272-7531abbf80db/hr-login-test-fixed.spec.ts",
-        "createdAt": "2025-09-05T21:55:52.586Z",
-        "updatedAt": "2025-09-05T21:55:52.586Z",
-        "status": "active",
-        "isGenerated": true,
-        "source": "Prompts"
-      },
-      {
-        "id": "projects-enhanced-ai-models-llm-generated-negative-login",
-        "name": "negative-login",
-        "description": "Generated test from projects/models",
-        "type": "Login Test",
+        "id": "ui-generated-from-hr-test--copy---admin-case",
+        "name": "generated from hr test copy  admin case",
         "tags": [
-          "negative",
-          "login",
-          "ui"
+          "ui",
+          "generated"
         ],
-        "project": "projects",
-        "model": "models",
-        "promptId": "llm-generated",
-        "filePath": "/Users/ravindramarkard/Desktop/latest Working Frameworks/ChatgptKindPrompt/tests/projects/enhanced-ai/models/llm-generated/LLM Generated/prompts/899904bd-1a7c-4a80-8022-ec47b64641b6/negative-login.spec.ts",
-        "relativePath": "../tests/projects/enhanced-ai/models/llm-generated/LLM Generated/prompts/899904bd-1a7c-4a80-8022-ec47b64641b6/negative-login.spec.ts",
-        "createdAt": "2025-09-07T17:36:27.174Z",
-        "updatedAt": "2025-09-07T17:36:27.174Z",
-        "status": "active",
-        "isGenerated": true,
-        "source": "Prompts"
-      },
-      {
-        "id": "projects-enhanced-ai-models-llm-generated-from-ench",
-        "name": "from-ench",
-        "description": "Generated test from projects/models",
-        "type": "Login Test",
-        "tags": [],
-        "project": "projects",
-        "model": "models",
-        "promptId": "llm-generated",
-        "filePath": "/Users/ravindramarkard/Desktop/latest Working Frameworks/ChatgptKindPrompt/tests/projects/enhanced-ai/models/llm-generated/LLM Generated/prompts/cc3b061d-8e20-42af-b504-7dc56a4edebc/from-ench.spec.ts",
-        "relativePath": "../tests/projects/enhanced-ai/models/llm-generated/LLM Generated/prompts/cc3b061d-8e20-42af-b504-7dc56a4edebc/from-ench.spec.ts",
-        "createdAt": "2025-09-07T15:50:02.021Z",
-        "updatedAt": "2025-09-07T15:50:02.021Z",
-        "status": "active",
-        "isGenerated": true,
-        "source": "Prompts"
+        "type": "UI",
+        "filePath": "projects/enhanced-ai/models/llm-generated/LLM-Generated/prompts/1d6618d0-7918-43d0-bebd-f4aeb3d819e7/generated-from-hr-test--copy---admin-case.spec.ts",
+        "created": "2025-09-13T22:33:56.696Z",
+        "modified": "2025-09-13T22:33:56.696Z"
       }
     ],
-    "testIds": [
-      null,
-      "projects-default-project-models-default-model-generated-from-logintest",
-      "projects-enhanced-ai-models-llm-generated-hr-login-test-fixed",
-      "projects-enhanced-ai-models-llm-generated-negative-login",
-      "projects-enhanced-ai-models-llm-generated-from-ench"
+    "createdAt": "2025-09-13T17:13:10.768Z",
+    "status": "ready",
+    "totalTests": 1,
+    "lastRun": null,
+    "results": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "total": 2
+    },
+    "selectedTestCases": [
+      {
+        "id": "ui-generated-from-hr-test--copy---admin-case",
+        "name": "generated from hr test copy  admin case",
+        "tags": [
+          "ui",
+          "generated"
+        ],
+        "type": "UI",
+        "filePath": "projects/enhanced-ai/models/llm-generated/LLM-Generated/prompts/1d6618d0-7918-43d0-bebd-f4aeb3d819e7/generated-from-hr-test--copy---admin-case.spec.ts",
+        "created": "2025-09-13T22:33:56.696Z",
+        "modified": "2025-09-13T22:33:56.696Z"
+      }
     ],
-    "environment": "dev",
-    "tags": [
-      "custom"
+    "updatedAt": "2025-09-14T13:56:13.772Z"
+  },
+  {
+    "id": "suite-1757877960170-vqq2aamg6",
+    "name": "Duplicate Test Suite",
+    "description": "Test suite with duplicate test cases",
+    "testType": "UI",
+    "testCases": [
+      {
+        "id": "test1",
+        "name": "Test 1",
+        "filePath": "projects/enhanced-ai/models/llm-generated/LLM-Generated/prompts/1d6618d0-7918-43d0-bebd-f4aeb3d819e7/generated-from-hr-test--copy---admin-case.spec.ts",
+        "isReference": true
+      },
+      {
+        "id": "test2",
+        "name": "Test 2",
+        "filePath": "projects/enhanced-ai/models/llm-generated/LLM-Generated/prompts/1d6618d0-7918-43d0-bebd-f4aeb3d819e7/generated-from-hr-test--copy---admin-case.spec.ts",
+        "isReference": true
+      }
     ],
-    "status": "active",
-    "createdAt": "2025-09-07T18:54:31.501Z",
-    "updatedAt": "2025-09-07T18:54:31.501Z"
+    "createdAt": "2025-09-14T19:26:00.170Z",
+    "status": "ready",
+    "totalTests": 2,
+    "lastRun": null,
+    "results": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "total": 2
+    }
+  },
+  {
+    "id": "suite-1757878028778-vkn4jvyem",
+    "name": "Simple Test Suite",
+    "description": "Test suite with simple test",
+    "testType": "UI",
+    "testCases": [
+      {
+        "id": "test1",
+        "name": "Test 1",
+        "filePath": "tests/spec1-login.spec.ts",
+        "isReference": true
+      },
+      {
+        "id": "test2",
+        "name": "Test 2",
+        "filePath": "tests/spec1-login.spec.ts",
+        "isReference": true
+      }
+    ],
+    "createdAt": "2025-09-14T19:27:08.778Z",
+    "status": "ready",
+    "totalTests": 2,
+    "lastRun": null,
+    "results": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "total": 2
+    }
+  },
+  {
+    "id": "suite-1757880994799-fh167tzco",
+    "name": "Retries Test Suite",
+    "description": "Test suite to verify retries functionality",
+    "testType": "UI",
+    "testCases": [
+      {
+        "id": "test1",
+        "name": "Test 1",
+        "filePath": "tests/spec1-login.spec.ts",
+        "isReference": true
+      }
+    ],
+    "createdAt": "2025-09-14T20:16:34.799Z",
+    "status": "ready",
+    "totalTests": 1,
+    "lastRun": null,
+    "results": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "total": 1
+    }
+  },
+  {
+    "id": "suite-1757881059915-079p45wak",
+    "name": "Failing Test Suite",
+    "description": "Test suite with failing test to demonstrate retries",
+    "testType": "UI",
+    "testCases": [
+      {
+        "id": "test1",
+        "name": "Failing Test",
+        "filePath": "tests/test-retries.spec.ts",
+        "isReference": true
+      }
+    ],
+    "createdAt": "2025-09-14T20:17:39.915Z",
+    "status": "ready",
+    "totalTests": 1,
+    "lastRun": null,
+    "results": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "total": 1
+    }
+  },
+  {
+    "id": "suite-1757881233929-55qok8vjs",
+    "name": "Passing Test Suite",
+    "description": "Test suite with passing test to verify retries environment variable",
+    "testType": "UI",
+    "testCases": [
+      {
+        "id": "test1",
+        "name": "Passing Test",
+        "filePath": "tests/test-retries-passing.spec.ts",
+        "isReference": true
+      }
+    ],
+    "createdAt": "2025-09-14T20:20:33.929Z",
+    "status": "ready",
+    "totalTests": 1,
+    "lastRun": null,
+    "results": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "total": 1
+    }
   }
 ]

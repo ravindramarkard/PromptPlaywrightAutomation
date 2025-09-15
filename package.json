@@ -4,14 +4,15 @@
   "description": "AI-powered test generation platform using Playwright and Allure",
   "main": "server/index.js",
   "scripts": {
-    "install:browsers": "PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd server && npm run dev",
     "client": "cd client && npm start",
     "build": "cd client && npm run build",
     "test": "cd server && npm test",
     "test:playwright": "cd server && npx playwright test",
-    "test:report": "cd server && npx allure serve allure-results"
+    "test:report": "cd server && npx allure serve allure-results",
+    "test:results": "node scripts/get-latest-results.js",
+    "test:refresh-reports": "node scripts/refresh-reports.js"
   },
   "keywords": [
     "testing",
@@ -23,7 +24,6 @@
   "author": "Ravindra Markard",
   "license": "Ravindra Markard",
   "devDependencies": {
-    "@cucumber/cucumber": "^10.0.0",
     "@playwright/test": "^1.40.0",
     "allure-commandline": "^2.24.0",
     "allure-playwright": "^3.3.3",

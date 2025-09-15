@@ -202,7 +202,7 @@ const CreateEnvironmentModal = ({ onClose, onSubmit }) => {
     key: '',
     description: '',
     variables: {
-      BASE_URL: process.env.BASE_URL || 'http://localhost:3000',
+      BASE_URL: process.env.BASE_URL || 'http://localhost:5050',
       API_URL: '',
       USERNAME: '',
       PASSWORD: '',
@@ -281,8 +281,8 @@ const CreateEnvironmentModal = ({ onClose, onSubmit }) => {
     setTestingLLM(true);
     try {
       const response = await api.post('/environments/test-llm-connection', {
-        provider: provider === 'local' ? llmProvider : provider,
-        llmType: provider === 'local' ? 'local' : provider,
+        provider: provider === 'local' ? 'local' : provider,
+        llmType: provider === 'local' ? llmProvider : provider,
         apiKey: provider === 'local' ? (apiKey || '') : apiKey,
         model,
         baseUrl

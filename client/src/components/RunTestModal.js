@@ -255,6 +255,7 @@ const RunTestModal = ({ isOpen, onClose, test, onTestRun }) => {
     timeout: 30000
   });
   const [environments, setEnvironments] = useState([]);
+  const [selectedEnvironment, setSelectedEnvironment] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const fetchEnvironments = useCallback(async () => {
@@ -266,10 +267,12 @@ const RunTestModal = ({ isOpen, onClose, test, onTestRun }) => {
       
       // Set default environment to the first available one
       if (envs.length > 0 && config.environment === '') {
+        const defaultEnv = envs[0];
         setConfig(prev => ({
           ...prev,
-          environment: envs[0].key || envs[0].name
+          environment: defaultEnv.key || defaultEnv.name
         }));
+        setSelectedEnvironment(defaultEnv);
       }
     } catch (error) {
       console.error('Error fetching environments:', error);
@@ -290,6 +293,12 @@ const RunTestModal = ({ isOpen, onClose, test, onTestRun }) => {
       ...prev,
       [field]: value
     }));
+    
+    // If environment is being changed, update selectedEnvironment
+    if (field === 'environment') {
+      const env = environments.find(e => (e.key || e.name) === value);
+      setSelectedEnvironment(env || null);
+    }
   };
 
   const handleRunTest = async () => {
@@ -297,10 +306,18 @@ const RunTestModal = ({ isOpen, onClose, test, onTestRun }) => {
 
     setLoading(true);
     try {
+      // Ensure test has required properties with fallbacks
+      const safeTest = {
+        testId: test.id || test.testId || 'unknown',
+        testName: test.name || test.testName || 'Unknown Test',
+        testType: test.type || test.testType || 'Unknown'
+      };
+
       const testConfig = {
         testId: safeTest.testId,
         promptId: test.promptId,
         environment: config.environment,
+        environmentConfig: selectedEnvironment, // Pass full environment object with variables
         browser: config.browser,
         headless: config.headless,
         retries: parseInt(config.retries),

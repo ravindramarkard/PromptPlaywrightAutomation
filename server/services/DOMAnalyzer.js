@@ -15,9 +15,402 @@ class DOMAnalyzer {
     }
   }
 
+  async cleanup() {
+    try {
+      if (this.page && !this.page.isClosed()) {
+        await this.page.close();
+      }
+      if (this.browser) {
+        await this.browser.close();
+      }
+      this.page = null;
+      this.browser = null;
+    } catch (error) {
+      console.warn('DOMAnalyzer cleanup error:', error.message);
+    }
+  }
+
+  async navigateToPage(url, timeout, waitUntil, retries) {
+    const waitOrder = [waitUntil, 'load', 'domcontentloaded', 'networkidle'];
+    let lastError = null;
+    
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      for (const wu of waitOrder) {
+        try {
+          console.log(`DOMAnalyzer: navigating (attempt ${attempt + 1}/${retries + 1}) waitUntil=${wu}, timeout=${timeout}ms`);
+          await this.page.goto(url, { waitUntil: wu, timeout });
+          await this.page.waitForLoadState('domcontentloaded', { timeout: Math.min(timeout, 15000) }).catch(() => {});
+          lastError = null;
+          break;
+        } catch (err) {
+          lastError = err;
+          console.warn(`DOMAnalyzer navigation failed with waitUntil=${wu}: ${err.message}`);
+        }
+      }
+      if (!lastError) break;
+    }
+
+    if (lastError) {
+      console.warn('DOMAnalyzer: navigation failed after retries, attempting HTML snapshot fallback...');
+      try {
+        await this.loadHtmlSnapshot(url, timeout);
+      } catch (snapshotError) {
+        console.warn('DOMAnalyzer: HTML snapshot also failed, continuing without DOM analysis');
+        throw lastError;
+      }
+    }
+  }
+
+  async executeStep(step, timeout) {
+    try {
+      const action = step.action || 'click';
+      const target = step.target || '';
+      const value = step.value || '';
+      
+      console.log(`Executing step: ${action} on ${target} with value: ${value}`);
+      
+      switch (action) {
+        case 'navigate':
+        case 'goto':
+          const url = step.url || step.target || step.originalText;
+          if (url && url.startsWith('http')) {
+            await this.page.goto(url, { waitUntil: 'load', timeout });
+            return url;
+          }
+          break;
+          
+        case 'click':
+          if (target) {
+            // Try different selector strategies
+            const selectors = this.generateSelectors(target);
+            for (const selector of selectors) {
+              try {
+                await this.page.click(selector, { timeout: 2000 });
+                await this.page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+                return this.page.url();
+              } catch (err) {
+                console.log(`Selector ${selector} failed: ${err.message}`);
+              }
+            }
+          }
+          break;
+          
+        case 'fill':
+        case 'type':
+          if (target && value) {
+            const selectors = this.generateSelectors(target);
+            for (const selector of selectors) {
+              try {
+                await this.page.fill(selector, value, { timeout: 2000 });
+                return this.page.url();
+              } catch (err) {
+                console.log(`Fill selector ${selector} failed: ${err.message}`);
+              }
+            }
+          }
+          break;
+          
+        case 'select':
+          if (target && value) {
+            const selectors = this.generateSelectors(target);
+            for (const selector of selectors) {
+              try {
+                await this.page.selectOption(selector, value, { timeout: 2000 });
+                await this.page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+                return this.page.url();
+              } catch (err) {
+                console.log(`Select selector ${selector} failed: ${err.message}`);
+              }
+            }
+          }
+          break;
+      }
+      
+      // Wait a bit for any navigation to complete
+      await this.page.waitForTimeout(1000);
+      return this.page.url();
+      
+    } catch (error) {
+      console.warn(`Step execution failed: ${error.message}`);
+      return this.page.url();
+    }
+  }
+
+  generateSelectors(target) {
+    const selectors = [];
+    
+    // If target looks like a URL, use it directly
+    if (target.startsWith('http')) {
+      return [target];
+    }
+    
+    // Generate various selector strategies
+    if (target.includes('username') || target.includes('email')) {
+      selectors.push('#username', '[name="username"]', '[name="email"]', 'input[type="email"]', 'input[placeholder*="username" i]', 'input[placeholder*="email" i]');
+    } else if (target.includes('password')) {
+      selectors.push('#password', '[name="password"]', 'input[type="password"]', 'input[placeholder*="password" i]');
+    } else if (target.includes('submit') || target.includes('login') || target.includes('sign in')) {
+      selectors.push('button[type="submit"]', 'input[type="submit"]', 'button:has-text("Login")', 'button:has-text("Sign In")', 'button:has-text("Submit")');
+    } else if (target.includes('button')) {
+      selectors.push('button', `button:has-text("${target}")`, `[role="button"]:has-text("${target}")`);
+    } else if (target.includes('link')) {
+      selectors.push('a', `a:has-text("${target}")`);
+    } else {
+      // Generic selectors
+      selectors.push(`#${target}`, `[name="${target}"]`, `[data-testid="${target}"]`, `button:has-text("${target}")`, `a:has-text("${target}")`);
+    }
+    
+    return selectors;
+  }
+
+  async extractElements() {
+    try {
+      // Wait for page to be fully loaded
+      await this.page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
+      
+      // Extract all interactive elements
+      const elements = await this.page.evaluate(() => {
+        const interactiveElements = [];
+        
+        // Get all input elements
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach((input, index) => {
+          const elementInfo = {
+            type: 'input',
+            tagName: input.tagName.toLowerCase(),
+            index,
+            attributes: {},
+            text: input.value || input.placeholder || '',
+            selectors: []
+          };
+          
+          // Collect all attributes
+          for (let attr of input.attributes) {
+            elementInfo.attributes[attr.name] = attr.value;
+          }
+          
+          // Generate possible selectors
+          if (input.getAttribute('data-testid')) {
+            elementInfo.selectors.push(`[data-testid="${input.getAttribute('data-testid')}"]`);
+          }
+          if (input.id) {
+            elementInfo.selectors.push(`#${input.id}`);
+          }
+          if (input.name) {
+            elementInfo.selectors.push(`[name="${input.name}"]`);
+          }
+          if (input.className) {
+            elementInfo.selectors.push(`.${input.className.split(' ').join('.')}`);
+          }
+          
+          // Add generic selector as fallback
+          elementInfo.selectors.push(`input:nth-child(${index + 1})`);
+          
+          interactiveElements.push(elementInfo);
+        });
+        
+        // Get all button elements
+        const buttons = document.querySelectorAll('button, input[type="button"], input[type="submit"]');
+        buttons.forEach((button, index) => {
+          const elementInfo = {
+            type: 'button',
+            tagName: button.tagName.toLowerCase(),
+            index,
+            attributes: {},
+            text: button.textContent?.trim() || button.value || '',
+            selectors: []
+          };
+          
+          // Collect all attributes
+          for (let attr of button.attributes) {
+            elementInfo.attributes[attr.name] = attr.value;
+          }
+          
+          // Generate possible selectors
+          if (button.getAttribute('data-testid')) {
+            elementInfo.selectors.push(`[data-testid="${button.getAttribute('data-testid')}"]`);
+          }
+          if (button.id) {
+            elementInfo.selectors.push(`#${button.id}`);
+          }
+          if (button.name) {
+            elementInfo.selectors.push(`[name="${button.name}"]`);
+          }
+          if (button.className) {
+            elementInfo.selectors.push(`.${button.className.split(' ').join('.')}`);
+          }
+          if (elementInfo.text) {
+            elementInfo.selectors.push(`button:has-text("${elementInfo.text}")`);
+          }
+          
+          // Add generic selector as fallback
+          elementInfo.selectors.push(`button:nth-child(${index + 1})`);
+          
+          interactiveElements.push(elementInfo);
+        });
+        
+        // Get all link elements
+        const links = document.querySelectorAll('a[href]');
+        links.forEach((link, index) => {
+          const elementInfo = {
+            type: 'link',
+            tagName: 'a',
+            index,
+            attributes: {},
+            text: link.textContent?.trim() || '',
+            selectors: []
+          };
+          
+          // Collect all attributes
+          for (let attr of link.attributes) {
+            elementInfo.attributes[attr.name] = attr.value;
+          }
+          
+          // Generate possible selectors
+          if (link.getAttribute('data-testid')) {
+            elementInfo.selectors.push(`[data-testid="${link.getAttribute('data-testid')}"]`);
+          }
+          if (link.id) {
+            elementInfo.selectors.push(`#${link.id}`);
+          }
+          if (link.className) {
+            elementInfo.selectors.push(`.${link.className.split(' ').join('.')}`);
+          }
+          if (elementInfo.text) {
+            elementInfo.selectors.push(`a:has-text("${elementInfo.text}")`);
+          }
+          
+          // Add generic selector as fallback
+          elementInfo.selectors.push(`a:nth-child(${index + 1})`);
+          
+          interactiveElements.push(elementInfo);
+        });
+        
+        return interactiveElements;
+      });
+      
+      return elements;
+    } catch (error) {
+      console.warn('Element extraction failed:', error.message);
+      return [];
+    }
+  }
+
+  removeDuplicateElements(elements) {
+    const seen = new Set();
+    const unique = [];
+    
+    for (const element of elements) {
+      // Create a unique key based on selectors and attributes
+      const key = element.selectors.sort().join('|') + '|' + element.type + '|' + element.text;
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(element);
+      }
+    }
+    
+    return unique;
+  }
+
+  async analyzeUserJourney(baseUrl, steps = [], options = {}) {
+    try {
+      // Always start fresh for user journey analysis
+      await this.cleanup();
+      await this.initialize();
+      
+      // Check if page is still valid
+      if (!this.page || this.page.isClosed()) {
+        console.log('DOMAnalyzer: Page is closed, reinitializing...');
+        await this.cleanup();
+        await this.initialize();
+      }
+      
+      console.log(`Analyzing user journey starting from: ${baseUrl}`);
+      console.log(`Steps to analyze: ${steps.length}`);
+      
+      const resolved = typeof options === 'number' ? { timeout: options } : options || {};
+      const timeout = resolved.timeout || parseInt(process.env.PLAYWRIGHT_ANALYZER_TIMEOUT_MS || '15000', 10); // Reduced from 60000 to 15000
+      const waitUntil = resolved.waitUntil || process.env.PLAYWRIGHT_NAV_WAIT_UNTIL || 'load';
+      const retries = resolved.retries != null ? resolved.retries : parseInt(process.env.PLAYWRIGHT_ANALYZER_RETRIES || '1', 10); // Reduced from 2 to 1
+
+      const allElements = [];
+      const pageAnalysis = [];
+      let currentUrl = baseUrl;
+
+      // Start with the base URL
+      await this.navigateToPage(currentUrl, timeout, waitUntil, retries);
+      const initialElements = await this.extractElements();
+      allElements.push(...initialElements);
+      pageAnalysis.push({
+        url: currentUrl,
+        elements: initialElements,
+        step: 'Initial page load'
+      });
+
+      // Follow each step and analyze the resulting pages (limit to first 5 steps to prevent timeout)
+      const maxSteps = Math.min(steps.length, 5);
+      for (let i = 0; i < maxSteps; i++) {
+        const step = steps[i];
+        console.log(`Analyzing step ${i + 1}: ${step.originalText || step.action}`);
+        
+        try {
+          // Execute the step
+          const newUrl = await this.executeStep(step, timeout);
+          if (newUrl && newUrl !== currentUrl) {
+            currentUrl = newUrl;
+            console.log(`Step ${i + 1} navigated to: ${currentUrl}`);
+            
+            // Analyze the new page
+            const stepElements = await this.extractElements();
+            allElements.push(...stepElements);
+            pageAnalysis.push({
+              url: currentUrl,
+              elements: stepElements,
+              step: step.originalText || step.action,
+              stepIndex: i + 1
+            });
+          }
+        } catch (stepError) {
+          console.warn(`Step ${i + 1} failed: ${stepError.message}`);
+          // Continue with next step even if current step fails
+        }
+      }
+
+      // Remove duplicate elements based on selector uniqueness
+      const uniqueElements = this.removeDuplicateElements(allElements);
+      
+      console.log(`User journey analysis completed. Found ${uniqueElements.length} unique elements across ${pageAnalysis.length} pages`);
+      
+      return {
+        url: baseUrl,
+        timestamp: new Date().toISOString(),
+        elements: uniqueElements,
+        pageAnalysis: pageAnalysis,
+        totalPages: pageAnalysis.length,
+        totalElements: uniqueElements.length
+      };
+      
+    } catch (error) {
+      console.error('User journey analysis failed:', error);
+      return {
+        url: baseUrl,
+        timestamp: new Date().toISOString(),
+        elements: [],
+        pageAnalysis: [],
+        error: `User journey analysis failed: ${error.message}`
+      };
+    }
+  }
+
   async analyzePage(url, options = {}) {
     try {
       await this.initialize();
+      
+      // Check if page is still valid
+      if (!this.page || this.page.isClosed()) {
+        console.log('DOMAnalyzer: Page is closed, reinitializing...');
+        await this.initialize();
+      }
       
       console.log(`Analyzing DOM structure for: ${url}`);
       // Backward compatibility: if a number was passed, treat as timeout
@@ -48,11 +441,33 @@ class DOMAnalyzer {
 
       if (lastError) {
         console.warn('DOMAnalyzer: navigation failed after retries, attempting HTML snapshot fallback...');
-        await this.loadHtmlSnapshot(url, timeout);
+        try {
+          await this.loadHtmlSnapshot(url, timeout);
+        } catch (snapshotError) {
+          console.warn('DOMAnalyzer: HTML snapshot also failed, continuing without DOM analysis');
+          // Return a minimal analysis result instead of throwing
+          return {
+            elements: [],
+            url: url,
+            timestamp: new Date().toISOString(),
+            error: 'DOM analysis failed - page navigation and HTML snapshot both failed'
+          };
+        }
       }
        
       // Wait for page to be fully loaded (best-effort)
       await this.page.waitForLoadState('domcontentloaded', { timeout: Math.min(timeout, 15000) }).catch(() => {});
+      
+      // Check if page is still valid before extracting elements
+      if (!this.page || this.page.isClosed()) {
+        console.warn('DOMAnalyzer: Page is closed before element extraction, returning minimal analysis');
+        return {
+          elements: [],
+          url: url,
+          timestamp: new Date().toISOString(),
+          error: 'Page was closed before element extraction'
+        };
+      }
       
       // Extract all interactive elements with their attributes
       const elements = await this.page.evaluate(() => {
@@ -224,21 +639,43 @@ class DOMAnalyzer {
       });
       
       console.log(`Found ${elements.length} interactive elements`);
+      // Get page title if page is still valid
+      let pageTitle = 'Unknown';
+      try {
+        if (this.page && !this.page.isClosed()) {
+          pageTitle = await this.page.title();
+        }
+      } catch (titleError) {
+        console.warn('Could not get page title:', titleError.message);
+      }
+
       return {
         url,
         timestamp: new Date().toISOString(),
         elements,
-        pageTitle: await this.page.title()
+        pageTitle
       };
       
     } catch (error) {
       console.error('DOM analysis failed:', error);
-      throw new Error(`Failed to analyze DOM: ${error.message}`);
+      // Return a minimal analysis result instead of throwing to prevent test generation failure
+      return {
+        elements: [],
+        url: url,
+        timestamp: new Date().toISOString(),
+        error: `DOM analysis failed: ${error.message}`
+      };
     }
   }
 
   async loadHtmlSnapshot(url, timeout) {
     try {
+      // Check if page is still valid before using it
+      if (!this.page || this.page.isClosed()) {
+        console.log('DOMAnalyzer: Page is closed during HTML snapshot, reinitializing...');
+        await this.initialize();
+      }
+      
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), Math.min(timeout, 15000));
       const res = await axios.get(url, { signal: controller.signal, timeout: Math.min(timeout, 15000) });

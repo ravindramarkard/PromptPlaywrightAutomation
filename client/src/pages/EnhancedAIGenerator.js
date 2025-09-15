@@ -356,6 +356,7 @@ const EnhancedAIGenerator = () => {
     testName: '',
     testType: 'UI Test',
     promptContent: '',
+    baseUrl: '',
     features: [],
     environmentId: '',
     useLLM: false,
@@ -560,7 +561,8 @@ const EnhancedAIGenerator = () => {
         testName: formData.testName,
         testType: formData.testType,
         environment: environment, // Pass the full environment object
-        parsedSteps: stepsToSend // Send parsed steps to LLM
+        parsedSteps: stepsToSend, // Send parsed steps to LLM
+        baseUrl: formData.baseUrl // Pass the prompt's baseUrl to take priority
       });
       
       setGeneratedCode(response.data.testCode);
@@ -872,6 +874,21 @@ const EnhancedAIGenerator = () => {
               onChange={handleInputChange}
               placeholder="Describe your test scenario in natural language..."
             />
+          </FormGroup>
+
+          <FormGroup>
+            <Label htmlFor="baseUrl">Base URL (Optional)</Label>
+            <Input
+              type="url"
+              id="baseUrl"
+              name="baseUrl"
+              value={formData.baseUrl}
+              onChange={handleInputChange}
+              placeholder="https://example.com (overrides environment base URL)"
+            />
+            <HelpText>
+              If provided, this URL will be used instead of the environment's base URL for test generation
+            </HelpText>
           </FormGroup>
           
           <Button

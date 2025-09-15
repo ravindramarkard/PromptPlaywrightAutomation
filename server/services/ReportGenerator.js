@@ -253,22 +253,28 @@ class ReportGenerator {
       
       const playwrightExists = await this.checkFileExists(path.join(this.playwrightReportDir, 'index.html'));
       const allureExists = await this.checkFileExists(path.join(this.allureReportDir, 'index.html'));
+      const apiExists = await this.checkFileExists(path.join(this.reportsDir, 'api', 'index.html'));
       
       return {
         playwright: { 
           available: playwrightExists, 
-          path: '/reports/playwright/index.html' 
+          path: 'http://localhost:5051/reports/playwright/index.html' 
         },
         allure: { 
           available: allureExists, 
-          path: '/reports/allure/index.html' 
+          path: 'http://localhost:5051/reports/allure/index.html' 
+        },
+        api: { 
+          available: apiExists, 
+          path: 'http://localhost:5051/reports/api/index.html' 
         }
       };
     } catch (error) {
       console.error('Error checking report status:', error);
       return {
-        playwright: { available: false, path: '/reports/playwright/index.html' },
-        allure: { available: false, path: '/reports/allure/index.html' }
+        playwright: { available: false, path: 'http://localhost:5051/reports/playwright/index.html' },
+        allure: { available: false, path: 'http://localhost:5051/reports/allure/index.html' },
+        api: { available: false, path: 'http://localhost:5051/reports/api/index.html' }
       };
     }
   }
@@ -276,6 +282,146 @@ class ReportGenerator {
   async checkFileExists(filePath) {
     try {
       await fs.access(filePath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async generateApiReport() {
+    try {
+      await this.ensureDirectories();
+      
+      const apiReportDir = path.join(this.reportsDir, 'api');
+      await fs.mkdir(apiReportDir, { recursive: true });
+      
+      const testResults = await this.fileStorage.getTestResults();
+      const apiTests = testResults.filter(test => test.testType === 'API Test' || test.testType === 'API');
+      
+      const reportData = {
+        summary: {
+          total: apiTests.length,
+          passed: apiTests.filter(t => t.status === 'passed').length,
+          failed: apiTests.filter(t => t.status === 'failed').length,
+          running: apiTests.filter(t => t.status === 'running').length,
+          duration: apiTests.reduce((sum, test) => sum + (test.results?.duration || 0), 0)
+        },
+        tests: apiTests.map(test => ({
+          name: test.testName || 'Unnamed API Test',
+          status: test.status,
+          duration: test.results?.duration || 0,
+          endpoint: test.results?.endpoint || 'Unknown',
+          method: test.results?.method || 'Unknown',
+          statusCode: test.results?.statusCode || 'N/A',
+          createdAt: test.createdAt,
+          completedAt: test.completedAt
+        }))
+      };
+      
+      const htmlContent = this.generateApiHTML(reportData);
+      await fs.writeFile(path.join(apiReportDir, 'index.html'), htmlContent);
+      
+      console.log('API report generated successfully');
+      return true;
+    } catch (error) {
+      console.error('Error generating API report:', error);
+      return false;
+    }
+  }
+
+  generateApiHTML(data) {
+    const rows = data.tests.map(t => `
+      <tr>
+        <td>${t.name || ''}</td>
+        <td><span class="method">${t.method || ''}</span></td>
+        <td><span class="endpoint">${t.endpoint || ''}</span></td>
+        <td>${t.statusCode || 'N/A'}</td>
+        <td class="${t.status}">${t.status}</td>
+        <td>${Math.round((t.duration || 0) / 1000)}s</td>
+        <td>${new Date(t.createdAt).toLocaleString()}</td>
+      </tr>
+    `).join('');
+    
+    return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>API Test Report</title>
+  <style>
+    body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; background: #f8f9fa; }
+    .container { max-width: 1200px; margin: 0 auto; background: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .header { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #e9ecef; }
+    .summary { display: flex; gap: 24px; margin-bottom: 24px; }
+    .stat-card { background: #f8f9fa; padding: 16px; border-radius: 6px; text-align: center; min-width: 120px; }
+    .stat-number { font-size: 24px; font-weight: bold; margin-bottom: 4px; }
+    .stat-label { font-size: 14px; color: #6c757d; }
+    .passed { color: #28a745; }
+    .failed { color: #dc3545; }
+    .running { color: #ffc107; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 12px; border-bottom: 1px solid #dee2e6; text-align: left; }
+    th { background: #f8f9fa; font-weight: 600; }
+    .method { font-family: monospace; background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+    .endpoint { font-family: monospace; color: #6c757d; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>API Test Report</h1>
+      <p>Comprehensive API testing results and performance metrics</p>
+    </div>
+    
+    <div class="summary">
+      <div class="stat-card">
+        <div class="stat-number">${data.summary.total}</div>
+        <div class="stat-label">Total Tests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number passed">${data.summary.passed}</div>
+        <div class="stat-label">Passed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number failed">${data.summary.failed}</div>
+        <div class="stat-label">Failed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${data.summary.running}</div>
+        <div class="stat-label">Running</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${Math.round(data.summary.duration / 1000)}s</div>
+        <div class="stat-label">Total Duration</div>
+      </div>
+    </div>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Test Name</th>
+          <th>Method</th>
+          <th>Endpoint</th>
+          <th>Status Code</th>
+          <th>Status</th>
+          <th>Duration</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>`;
+  }
+
+  async isReportAvailable(reportType) {
+    try {
+      const reportPath = reportType === 'playwright' ? this.playwrightReportDir : 
+                        reportType === 'api' ? path.join(this.reportsDir, 'api') : this.allureReportDir;
+      const indexPath = path.join(reportPath, 'index.html');
+      await fs.access(indexPath);
       return true;
     } catch {
       return false;
