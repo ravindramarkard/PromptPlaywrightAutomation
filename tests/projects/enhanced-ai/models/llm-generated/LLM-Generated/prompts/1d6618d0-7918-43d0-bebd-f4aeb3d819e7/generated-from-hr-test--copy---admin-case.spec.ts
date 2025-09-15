@@ -1,7 +1,8 @@
+//tags: smoke
 import { test, expect } from '@playwright/test';
 import { allure } from 'allure-playwright';
 
-const BASE_URL = process.env.BASE_URL || 'https://opensource-demo.orangehrmlive.com/web/index.php/auth/login';
+const BASE_URL = process.env.BASE_URL || 'https://opensource-demo.orangehrmlive.com/web/index.php/dashboard/index';
 const BROWSER_TYPE = process.env.BROWSER_TYPE || 'chromium';
 const HEADLESS_MODE = process.env.HEADLESS_MODE !== 'false';
 
@@ -13,13 +14,7 @@ test.describe('HR Admin User Creation Test', () => {
 
     await page.goto(BASE_URL);
     
-    // Login first (assuming standard OrangeHRM login)
-    await page.getByPlaceholder('Username').fill('Admin');
-    await page.getByPlaceholder('Password').fill('admin123');
-    await page.getByRole('button', { name: 'Login' }).click();
-    
-    // Wait for dashboard to load
-    await page.waitForSelector('.oxd-brand-banner', { timeout: 30000 });
+   
   });
 
   test('should create a new admin user successfully', async ({ page }) => {

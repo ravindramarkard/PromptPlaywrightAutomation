@@ -114,6 +114,8 @@ class ReportGenerator {
     th { background: #fafafa; }
     .passed { color: #1a7f37; }
     .failed { color: #d1242f; }
+    .skipped { color: #8b5a00; }
+    .success-rate { color: #0969da; font-weight: bold; }
   </style>
   </head>
 <body>
@@ -152,14 +154,21 @@ class ReportGenerator {
       const testResults = await this.fileStorage.getTestResults();
       const completedTests = testResults.filter(test => test.status === 'passed' || test.status === 'failed');
       
+      const passed = testResults.filter(t => t.status === 'passed').length;
+      const failed = testResults.filter(t => t.status === 'failed').length;
+      const skipped = testResults.filter(t => t.status === 'skipped').length;
+      const total = testResults.length;
+      const successRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+      
       const allureData = {
         summary: {
-          total: testResults.length,
-          passed: testResults.filter(t => t.status === 'passed').length,
-          failed: testResults.filter(t => t.status === 'failed').length,
+          total: total,
+          passed: passed,
+          failed: failed,
           broken: 0,
-          skipped: 0,
-          unknown: 0
+          skipped: skipped,
+          unknown: 0,
+          successRate: successRate
         },
         tests: completedTests.map(test => ({
           uuid: test._id,
@@ -228,6 +237,8 @@ class ReportGenerator {
     <strong>Total:</strong> ${data.summary.total} &nbsp; 
     <strong class="passed">Passed:</strong> ${data.summary.passed} &nbsp; 
     <strong class="failed">Failed:</strong> ${data.summary.failed} &nbsp; 
+    <strong class="skipped">Skipped:</strong> ${data.summary.skipped} &nbsp; 
+    <strong class="success-rate">Success Rate:</strong> ${data.summary.successRate}% &nbsp; 
   </div>
   <table>
     <thead>

@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const FileStorage = require('../services/FileStorage');
 const ReportGenerator = require('../services/ReportGenerator');
+const fs = require('fs').promises;
+const path = require('path');
 
 const fileStorage = new FileStorage();
 const reportGenerator = new ReportGenerator();
@@ -96,7 +98,7 @@ async function getAnalyticsFromReports() {
     
     try {
       const playwrightContent = await fs.readFile(playwrightReportPath, 'utf8');
-      const playwrightAnalytics = parsePlaywrightReportForAnalytics(playwrightContent);
+      const playwrightAnalytics = await parsePlaywrightReportForAnalytics(playwrightContent);
       if (playwrightAnalytics && playwrightAnalytics.totalTests > 0) {
         console.log('📊 Using Playwright analytics data:', playwrightAnalytics);
         return playwrightAnalytics;
@@ -115,14 +117,15 @@ async function getAnalyticsFromReports() {
 // Parse Allure report HTML to extract detailed analytics
 function parseAllureReportForAnalytics(htmlContent) {
   try {
-    // Look for summary section with statistics
-    const summaryMatch = htmlContent.match(/<strong>Total:<\/strong>\s*(\d+).*?<strong class="passed">Passed:<\/strong>\s*(\d+).*?<strong class="failed">Failed:<\/strong>\s*(\d+)/s);
+    // Look for summary section with statistics including skipped tests and success rate
+    const summaryMatch = htmlContent.match(/<strong>Total:<\/strong>\s*(\d+).*?<strong class="passed">Passed:<\/strong>\s*(\d+).*?<strong class="failed">Failed:<\/strong>\s*(\d+).*?<strong class="skipped">Skipped:<\/strong>\s*(\d+).*?<strong class="success-rate">Success Rate:<\/strong>\s*(\d+)%/s);
     
     if (summaryMatch) {
       const totalTests = parseInt(summaryMatch[1]);
       const passed = parseInt(summaryMatch[2]);
       const failed = parseInt(summaryMatch[3]);
-      const successRate = totalTests > 0 ? Math.round((passed / totalTests) * 100) : 0;
+      const skipped = parseInt(summaryMatch[4]);
+      const successRate = parseInt(summaryMatch[5]);
       
       // Generate mock detailed data based on the summary statistics
       const mockTestDetails = generateMockTestDetails(totalTests, passed, failed);
@@ -137,7 +140,7 @@ function parseAllureReportForAnalytics(htmlContent) {
         passed,
         failed,
         running: 0,
-        skipped: statusDistribution.skipped || 0,
+        skipped: skipped,
         successRate,
         averageDuration: calculateAverageDuration(mockTestDetails),
         statusDistribution,
@@ -154,20 +157,84 @@ function parseAllureReportForAnalytics(htmlContent) {
   }
 }
 
-// Parse Playwright report HTML to extract detailed analytics
-function parsePlaywrightReportForAnalytics(htmlContent) {
+// Get statistics from stored test results
+async function getStatsFromTestResults() {
   try {
-    // Look for summary section with statistics
-    const summaryMatch = htmlContent.match(/<strong>Total:<\/strong>\s*(\d+).*?<strong class="passed">Passed:<\/strong>\s*(\d+).*?<strong class="failed">Failed:<\/strong>\s*(\d+)/s);
+    const testResults = await fileStorage.getTestResults();
     
-    if (summaryMatch) {
-      const totalTests = parseInt(summaryMatch[1]);
-      const passed = parseInt(summaryMatch[2]);
-      const failed = parseInt(summaryMatch[3]);
-      const successRate = totalTests > 0 ? Math.round((passed / totalTests) * 100) : 0;
-      
-      // Generate mock detailed data based on the summary statistics
-      const mockTestDetails = generateMockTestDetails(totalTests, passed, failed);
+    if (!testResults || testResults.length === 0) {
+      return null;
+    }
+
+    // Calculate statistics
+    const totalTests = testResults.length;
+    const passed = testResults.filter(test => test.status === 'passed').length;
+    const failed = testResults.filter(test => test.status === 'failed').length;
+    const skipped = testResults.filter(test => test.status === 'skipped').length;
+    const running = testResults.filter(test => test.status === 'running').length;
+    const successRate = totalTests > 0 ? Math.round((passed / totalTests) * 100) : 0;
+
+    // Transform test details
+    const testDetails = testResults.map(test => ({
+      id: test.id || test.name,
+      name: test.name,
+      status: test.status,
+      duration: test.duration || 0,
+      severity: test.severity || 'medium',
+      timestamp: test.timestamp || new Date().toISOString(),
+      error: test.error || null
+    }));
+
+    // Calculate distributions
+    const statusDistribution = {
+      passed,
+      failed,
+      skipped,
+      running
+    };
+
+    const durationDistribution = {
+      '0-1s': testDetails.filter(t => t.duration <= 1000).length,
+      '1-5s': testDetails.filter(t => t.duration > 1000 && t.duration <= 5000).length,
+      '5-10s': testDetails.filter(t => t.duration > 5000 && t.duration <= 10000).length,
+      '10s+': testDetails.filter(t => t.duration > 10000).length
+    };
+
+    const severityDistribution = {
+      low: testDetails.filter(t => t.severity === 'low').length,
+      medium: testDetails.filter(t => t.severity === 'medium').length,
+      high: testDetails.filter(t => t.severity === 'high').length,
+      critical: testDetails.filter(t => t.severity === 'critical').length
+    };
+
+    return {
+      totalTests,
+      passed,
+      failed,
+      skipped,
+      running,
+      successRate,
+      statusDistribution,
+      durationDistribution,
+      severityDistribution,
+      testDetails
+    };
+  } catch (error) {
+    console.log('⚠️ Error getting stats from test results:', error.message);
+    return null;
+  }
+}
+
+// Parse Playwright report HTML to extract detailed analytics
+async function parsePlaywrightReportForAnalytics(htmlContent) {
+  try {
+    // Since Playwright reports are React applications with embedded data,
+    // we'll try to extract data from the actual test results instead
+    const stats = await getStatsFromTestResults();
+    
+    if (stats && stats.totalTests > 0) {
+      // Generate mock detailed data based on the actual statistics
+      const mockTestDetails = generateMockTestDetails(stats.totalTests, stats.passed, stats.failed);
       
       // Calculate detailed statistics
       const statusDistribution = calculateStatusDistribution(mockTestDetails);
@@ -175,12 +242,12 @@ function parsePlaywrightReportForAnalytics(htmlContent) {
       const severityDistribution = calculateSeverityDistribution(mockTestDetails);
       
       return {
-        totalTests,
-        passed,
-        failed,
-        running: 0,
-        skipped: statusDistribution.skipped || 0,
-        successRate,
+        totalTests: stats.totalTests,
+        passed: stats.passed,
+        failed: stats.failed,
+        running: stats.running || 0,
+        skipped: stats.skipped || 0,
+        successRate: stats.successRate,
         averageDuration: calculateAverageDuration(mockTestDetails),
         statusDistribution,
         durationDistribution,

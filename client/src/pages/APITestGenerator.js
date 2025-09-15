@@ -470,8 +470,19 @@ const APITestGenerator = () => {
       setEndpoints(response.data.endpoints || []);
       toast.success(`Loaded ${response.data.endpoints?.length || 0} endpoints`);
     } catch (err) {
-      setError(err.message);
-      toast.error(err.message);
+      let errorMessage = err.message;
+      
+      // Handle specific error types
+      if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+        errorMessage = 'Request timed out. API generation with LLM can take up to 2 minutes. Please try again or use standard generation.';
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Server error occurred during generation. Please check the server logs.';
+      } else if (err.response?.status === 404) {
+        errorMessage = 'API endpoint not found. Please ensure the server is running.';
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

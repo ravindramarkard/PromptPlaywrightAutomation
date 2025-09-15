@@ -1008,7 +1008,10 @@ test.describe('${endpoint.method} ${endpoint.path || endpoint.url || '/unknown'}
 - Memory usage
 
 ### 6. **Code Quality Requirements**:
-- Use proper TypeScript types
+- Use proper TypeScript types (APIResponse for response variables, unknown for error parameters)
+- Declare response variables as: \`const response: APIResponse = await requestContext.method(...)\`
+- Handle errors with proper typing: \`catch (error: unknown)\`
+- Use type guards for error handling: \`error instanceof Error ? error.message : String(error)\`
 - Include comprehensive error handling
 - Add detailed logging and debugging
 - Follow Playwright best practices
@@ -1020,7 +1023,16 @@ test.describe('${endpoint.method} ${endpoint.path || endpoint.url || '/unknown'}
 - Include proper timeout and retry logic
 - Handle different API versions
 
+### 8. **TypeScript Best Practices**:
+- Always import APIResponse from '@playwright/test'
+- Declare response variables with explicit types: \`const response: APIResponse = await requestContext.post(...)\`
+- Use proper error typing in catch blocks: \`catch (error: unknown)\`
+- Avoid variable redeclaration - use unique variable names in different scopes
+- Use non-null assertions (!) only when you're certain the variable is defined
+
 Generate a complete, production-ready test that demonstrates advanced API testing techniques with comprehensive schema analysis, multiple test variations, and enterprise-grade reporting.
+
+IMPORTANT: Ensure all TypeScript types are properly declared to avoid compilation errors. Use APIResponse type for all response variables and unknown type for error parameters.
 
 Focus on the **${variation}** variation as the primary test case, but include elements from other variations where relevant.`;
 
@@ -1339,6 +1351,18 @@ function postProcessAPITestCode(generatedCode, endpoint, variation, timeout, env
     }
   }
   
+  // Ensure APIResponse is included in @playwright/test imports
+  if (importMap.has('@playwright/test')) {
+    const playwrightImports = importMap.get('@playwright/test');
+    const importsList = playwrightImports.split(',').map(imp => imp.trim());
+    if (!importsList.includes('APIResponse')) {
+      importsList.push('APIResponse');
+      importMap.set('@playwright/test', importsList.join(', '));
+    }
+  } else {
+    importMap.set('@playwright/test', 'test, expect, APIRequestContext, APIResponse');
+  }
+  
   // Reconstruct imports
   const finalImports = [];
   for (const [module, imports] of importMap) {
@@ -1375,6 +1399,9 @@ function postProcessAPITestCode(generatedCode, endpoint, variation, timeout, env
       'requestContext = await request.newContext('
     );
   }
+  
+  // Fix TypeScript type issues
+  processedCode = fixTypeScriptTypes(processedCode);
   
   // Fix duplicate variable declarations in the same scope
   // This is a more complex fix that needs to handle scoped variable conflicts
@@ -1512,15 +1539,42 @@ function postProcessE2ETestCode(generatedCode, endpoints, resourceName, timeout)
     'expect([200, 201, 400, 404]).toContain(response.status())'
   );
   
-  // Add comprehensive test data management imports
-  if (!processedCode.includes('// Test Data Management')) {
+  // Only add test data management if it doesn't already exist
+  if (!processedCode.includes('// Test Data Management') && !processedCode.includes('const testDataRegistry') && !processedCode.includes('function generateValid')){
     const dataManagementCode = `
 // Test Data Management
-const testDataRegistry = new Map();
-const createdResources = [];
+interface TestResource {
+  id: string;
+  data: any;
+  cleanup?: () => Promise<void>;
+}
+
+interface TestResponse {
+  method: string;
+  path: string;
+  status: number;
+  responseTime: number;
+  timestamp: string;
+}
+
+interface TestDataRegistry {
+  created: any;
+  updated: any;
+  ids: string[];
+  responses: TestResponse[];
+}
+
+const testDataRegistry: TestDataRegistry = {
+  created: {},
+  updated: {},
+  ids: [],
+  responses: []
+};
+
+const createdResources: TestResource[] = [];
 
 // Data Factory Functions
-function generateValid${resourceName}Data() {
+function generateValid${resourceName}Data(): any {
   return {
     id: Date.now() + Math.random(),
     name: \`Test ${resourceName} \${Date.now()}\`,
@@ -1530,7 +1584,7 @@ function generateValid${resourceName}Data() {
   };
 }
 
-function generateInvalid${resourceName}Data() {
+function generateInvalid${resourceName}Data(): any {
   return {
     // Missing required fields or invalid data types
     invalidField: null,
@@ -1539,7 +1593,7 @@ function generateInvalid${resourceName}Data() {
   };
 }
 
-function generateBoundary${resourceName}Data() {
+function generateBoundary${resourceName}Data(): any {
   return {
     name: 'a', // Minimum length
     description: 'x'.repeat(255), // Maximum length
@@ -1549,37 +1603,41 @@ function generateBoundary${resourceName}Data() {
 }
 
 // Test Data Registry Functions
-function registerTestData(type, id, data) {
-  if (!testDataRegistry.has(type)) {
-    testDataRegistry.set(type, new Map());
+function registerTestData(id: string, data: any): void {
+  testDataRegistry.created = data;
+  if (data && data.id) {
+    testDataRegistry.ids.push(data.id);
   }
-  testDataRegistry.get(type).set(id, data);
-  createdResources.push({ type, id, data });
+  createdResources.push({ id, data });
 }
 
-function getTestData(type, id) {
-  return testDataRegistry.get(type)?.get(id);
+function getTestData(id: string): any {
+  return testDataRegistry.created;
 }
 
-function clearTestDataRegistry() {
-  testDataRegistry.clear();
+function clearTestDataRegistry(): void {
+  testDataRegistry.created = {};
+  testDataRegistry.updated = {};
+  testDataRegistry.ids = [];
+  testDataRegistry.responses = [];
   createdResources.length = 0;
 }
 
 // Cleanup Functions
-async function cleanupTestData(request) {
+async function cleanupTestData(request: any): Promise<void> {
   console.log(\`Starting cleanup of \${createdResources.length} test resources...\`);
   
   // Cleanup in reverse order (LIFO) to handle dependencies
   for (let i = createdResources.length - 1; i >= 0; i--) {
     const resource = createdResources[i];
     try {
-      const deleteResponse = await request.delete(\`/api/\${resource.type}/\${resource.id}\`);
+      const deleteResponse = await request.delete(\`/api/v1/${resourceName.toLowerCase()}/\${resource.id}\`);
       if (deleteResponse.status() === 204 || deleteResponse.status() === 200) {
-        console.log(\`Successfully cleaned up \${resource.type} with ID: \${resource.id}\`);
+        console.log(\`Successfully cleaned up ${resourceName} with ID: \${resource.id}\`);
       }
-    } catch (error) {
-      console.warn(\`Failed to cleanup \${resource.type} with ID: \${resource.id}\`, error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.warn(\`Failed to cleanup ${resourceName} with ID: \${resource.id}\`, errorMessage);
     }
   }
   
@@ -1623,29 +1681,72 @@ async function cleanupTestData(request) {
     );
   }
   
-  // Add comprehensive error handling
-  if (!processedCode.includes('// Enhanced Error Handling')) {
+  // Remove emojis and fix string literal issues - comprehensive emoji removal
+  processedCode = processedCode.replace(/[\u{1F000}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F100}-\u{1F1FF}]|[\u{1F200}-\u{1F2FF}]|[\u{1F300}-\u{1F5FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|[\u{1F780}-\u{1F7FF}]|[\u{1F800}-\u{1F8FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2190}-\u{21FF}]|[\u{2300}-\u{23FF}]|[\u{2B00}-\u{2BFF}]|[\u{3030}]|[\u{303D}]|[\u{3297}]|[\u{3299}]/gu, '');
+  
+  // Fix broken string literals caused by line breaks - more comprehensive approach
+  processedCode = processedCode.replace(/console\.log\('([^']*?)\n([^']*?)\'\);/g, "console.log('$1 $2');");
+  processedCode = processedCode.replace(/console\.log\('\s*\n\s*([^']*)\'\);/g, "console.log('$1');");
+  processedCode = processedCode.replace(/console\.log\('([^']*?)\s*\n\s*([^']*)\'\);/g, "console.log('$1 $2');");
+  // Fix any remaining broken console.log statements
+  processedCode = processedCode.replace(/console\.log\([^)]*\n[^)]*\)/g, (match) => {
+    return match.replace(/\n/g, ' ').replace(/\s+/g, ' ');
+  });
+  
+  // Replace testData references with testDataRegistry to match our data management structure
+  processedCode = processedCode.replace(/testData\./g, 'testDataRegistry.');
+  processedCode = processedCode.replace(/const testData = /g, 'const testDataRegistry: TestDataRegistry = ');
+  processedCode = processedCode.replace(/let testData = /g, 'let testDataRegistry: TestDataRegistry = ');
+  
+  // Add TypeScript interfaces if not already present
+  if (!processedCode.includes('interface TestResponse') && !processedCode.includes('interface TestDataRegistry')) {
+    const interfaceDefinitions = `
+interface TestResponse {
+  method: string;
+  path: string;
+  status: number;
+  responseTime: number;
+  timestamp: string;
+}
+
+interface TestDataRegistry {
+  created: any;
+  updated: any;
+  ids: any[];
+  responses: TestResponse[];
+}
+`;
+    
+    // Insert interfaces after the last import statement
+    processedCode = processedCode.replace(/(import.*?;\s*\n)(\s*\n)?/, `$1${interfaceDefinitions}\n`);
+  }
+  
+  // Only add error handling if it doesn't already exist
+  if (!processedCode.includes('// Enhanced Error Handling') && !processedCode.includes('function handleTestError') && !processedCode.includes('function retryOperation')) {
     const errorHandlingCode = `
 // Enhanced Error Handling
-function handleTestError(error, operation, resourceId = null) {
+function handleTestError(error: unknown, operation: string, resourceId: string | null = null) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorStack = error instanceof Error ? error.stack : undefined;
+  
   console.error(\`Error during \${operation}:\`, {
-    message: error.message,
+    message: errorMessage,
     resourceId,
     timestamp: new Date().toISOString(),
-    stack: error.stack
+    stack: errorStack
   });
   
   // Add to allure report
   allure.attachment('Error Details', JSON.stringify({
     operation,
     resourceId,
-    error: error.message,
+    error: errorMessage,
     timestamp: new Date().toISOString()
   }), 'application/json');
 }
 
 // Retry mechanism for network operations
-async function retryOperation(operation, maxRetries = 3, delay = 1000) {
+async function retryOperation<T>(operation: () => Promise<T>, maxRetries = 3, delay = 1000): Promise<T> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
@@ -1666,6 +1767,48 @@ async function retryOperation(operation, maxRetries = 3, delay = 1000) {
       `// Test Data Management${errorHandlingCode}`
     );
   }
+  
+  return processedCode;
+}
+
+function fixTypeScriptTypes(code) {
+  let processedCode = code;
+  
+  // Fix response variable declarations to use proper TypeScript types
+  // Pattern: const response = await requestContext.post(...)
+  processedCode = processedCode.replace(
+    /(const|let)\s+(response)\s*=\s*await\s+requestContext\./g,
+    '$1 $2: APIResponse = await requestContext.'
+  );
+  
+  // Fix response variable declarations without type annotation
+  processedCode = processedCode.replace(
+    /(const|let)\s+(response)\s*;/g,
+    '$1 $2: APIResponse | undefined;'
+  );
+  
+  // Fix error handling in catch blocks
+  processedCode = processedCode.replace(
+    /catch\s*\(\s*(\w+)\s*\)/g,
+    'catch ($1: unknown)'
+  );
+  
+  // Fix error message extraction in catch blocks
+  processedCode = processedCode.replace(
+    /(console\.log|console\.error)\(.*?error\)/g,
+    (match) => {
+      if (match.includes('error instanceof Error')) {
+        return match;
+      }
+      return match.replace(/error/g, 'error instanceof Error ? error.message : String(error)');
+    }
+  );
+  
+  // Fix response usage with proper null checks
+  processedCode = processedCode.replace(
+    /response\.(status|headers|json|text)\(/g,
+    'response!.$1('
+  );
   
   return processedCode;
 }

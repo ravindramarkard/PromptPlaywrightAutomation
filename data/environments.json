@@ -82,42 +82,7 @@
       "TIMEOUT": 30000,
       "BROWSER": "chromium",
       "HEADLESS": false,
-      "RETRIES": 2
-    },
-    "jiraIntegration": {
-      "enabled": false,
-      "url": "",
-      "username": "",
-      "password": "",
-      "projectKey": "",
-      "apiToken": ""
-    },
-    "llmConfiguration": {
-      "enabled": false,
-      "provider": "openrouter",
-      "apiKey": "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",
-      "model": "deepseek/deepseek-chat-v3-0324:free",
-      "baseUrl": "https://openrouter.ai",
-      "llmProvider": ""
-    },
-    "createdAt": "2025-09-09T22:25:17.412Z",
-    "updatedAt": "2025-09-14T20:11:08.348Z",
-    "status": "active"
-  },
-  {
-    "_id": "62f5c730-ad8c-4982-a6be-153743a950bd",
-    "name": "openroute",
-    "key": "openroute",
-    "description": "sdfds",
-    "variables": {
-      "BASE_URL": "https://opensource-demo.orangehrmlive.com/web/index.php/auth/login",
-      "API_URL": "https://petstore.swagger.io/",
-      "USERNAME": "Admin",
-      "PASSWORD": "admin123",
-      "TIMEOUT": 30000,
-      "BROWSER": "chromium",
-      "HEADLESS": false,
-      "RETRIES": 2
+      "RETRIES": 1
     },
     "jiraIntegration": {
       "enabled": false,
@@ -130,82 +95,48 @@
     "llmConfiguration": {
       "enabled": true,
       "provider": "openrouter",
-      "apiKey": "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",
-      "model": "deepseek-r1-0528:free",
-      "baseUrl": "https://openrouter.ai/api/v1/chat/completions",
+      "apiKey": "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",
+      "model": "deepseek/deepseek-chat-v3-0324:free",
+      "baseUrl": "https://openrouter.ai",
       "llmProvider": ""
     },
-    "createdAt": "2025-09-13T13:39:32.208Z",
-    "updatedAt": "2025-09-14T10:42:06.272Z",
+    "createdAt": "2025-09-09T22:25:17.412Z",
+    "updatedAt": "2025-09-15T19:44:22.927Z",
     "status": "active"
   },
   {
-    "_id": "e78c5f6c-197d-4cc7-ab92-06ad9c384395",
-    "name": "Test Retries Environment",
-    "key": "test-retries-env",
-    "description": "Environment to test retries functionality",
+    "_id": "62f5c730-ad8c-4982-a6be-153743a950bd",
+    "name": "openroute",
+    "key": "openroute",
+    "description": "sdfds",
     "variables": {
-      "BASE_URL": "http://localhost:5050",
-      "API_URL": "",
-      "USERNAME": "",
-      "PASSWORD": "",
+      "BASE_URL": "https://petstore.swagger.io",
+      "API_URL": "https://petstore.swagger.io/",
+      "USERNAME": "Admin",
+      "PASSWORD": "admin123",
       "TIMEOUT": 30000,
       "BROWSER": "chromium",
-      "HEADLESS": true,
-      "RETRIES": 3
+      "HEADLESS": false,
+      "RETRIES": 1
     },
     "jiraIntegration": {
       "enabled": false,
       "url": "",
       "username": "",
       "password": "",
-      "projectKey": ""
+      "projectKey": "",
+      "apiToken": ""
     },
     "llmConfiguration": {
-      "enabled": false,
-      "provider": "openai",
-      "apiKey": "",
-      "model": "",
-      "baseUrl": ""
+      "enabled": true,
+      "provider": "openrouter",
+      "apiKey": "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",
+      "model": "deepseek/deepseek-chat-v3.1:free",
+      "baseUrl": "https://openrouter.ai",
+      "llmProvider": ""
     },
-    "createdAt": "2025-09-14T19:53:26.269Z",
-    "updatedAt": "2025-09-14T19:53:26.269Z"
-  },
-  {
-    "_id": "8fddaf9c-e917-47af-9df9-f5feea60baf1",
-    "name": "Test Environment with Retries",
-    "key": "test-retries",
-    "description": "Environment with custom retries value",
-    "variables": {
-      "BASE_URL": "http://localhost:5050",
-      "API_URL": "",
-      "USERNAME": "",
-      "PASSWORD": "",
-      "TIMEOUT": 30000,
-      "BROWSER": "chromium",
-      "HEADLESS": true,
-      "RETRIES": 2,
-      "retries": 3,
-      "baseUrl": "http://localhost:5050",
-      "apiBaseUrl": "http://localhost:5051",
-      "username": "admin",
-      "password": "admin123"
-    },
-    "jiraIntegration": {
-      "enabled": false,
-      "url": "",
-      "username": "",
-      "password": "",
-      "projectKey": ""
-    },
-    "llmConfiguration": {
-      "enabled": false,
-      "provider": "openai",
-      "apiKey": "",
-      "model": "",
-      "baseUrl": ""
-    },
-    "createdAt": "2025-09-14T20:16:23.217Z",
-    "updatedAt": "2025-09-14T20:16:23.217Z"
+    "createdAt": "2025-09-13T13:39:32.208Z",
+    "updatedAt": "2025-09-15T15:28:17.202Z",
+    "status": "active"
   }
 ]

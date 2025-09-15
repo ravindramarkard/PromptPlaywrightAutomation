@@ -265,42 +265,6 @@
     "updatedAt": "2025-09-13T13:08:21.028Z"
   },
   {
-    "_id": "f6c93706-9165-4b03-85c7-1532dd312166",
-    "title": "Fix Dashboard Element Ambiguity",
-    "description": "Fix Playwright strict mode violation where getByText(\"Dashboard\") resolves to 2 elements",
-    "promptContent": "Create a Playwright test for OrangeHRM login that fixes the strict mode violation error. The error occurs because getByText(\"Dashboard\") resolves to 2 elements: 1) a span with class oxd-main-menu-item--name and 2) an h6 with class oxd-topbar-header-breadcrumb-module. Use more specific selectors like getByRole(\"heading\", { name: \"Dashboard\" }) to target the correct Dashboard heading element. Navigate to https://opensource-demo.orangehrmlive.com/web/index.php/auth/login, login with Admin/admin123, and verify successful login by checking for the Dashboard heading (not the menu item). Make the test robust with proper wait conditions and error handling. Avoid using getByText(\"Dashboard\") directly - use more specific role-based selectors instead.",
-    "testType": "UI Test",
-    "tags": [
-      "playwright",
-      "orangehrm",
-      "login",
-      "dashboard",
-      "strict-mode-fix"
-    ],
-    "projectId": "default-project",
-    "modelId": "default-model",
-    "modelName": "Default Model",
-    "promptId": "a2be11aa-7792-460b-903d-c9ba6b782680",
-    "status": "draft",
-    "generatedTests": [],
-    "metadata": {
-      "parsedSteps": [
-        {
-          "stepNumber": 1,
-          "originalText": "Create a Playwright test for OrangeHRM login that fixes the strict mode violation error. The error occurs because getByText(\"Dashboard\") resolves to 2 elements: 1) a span with class oxd-main-menu-item--name and 2) an h6 with class oxd-topbar-header-breadcrumb-module. Use more specific selectors like getByRole(\"heading\", { name: \"Dashboard\" }) to target the correct Dashboard heading element. Navigate to https://opensource-demo.orangehrmlive.com/web/index.php/auth/login, login with Admin/admin123, and verify successful login by checking for the Dashboard heading (not the menu item). Make the test robust with proper wait conditions and error handling. Avoid using getByText(\"Dashboard\") directly - use more specific role-based selectors instead.",
-          "action": "navigate",
-          "target": "[data-testid=\"using\"]",
-          "value": null,
-          "assertion": "successful login by checking for the Dashboard heading (not the menu item). Make the test robust with proper wait conditions and error handling. Avoid using getByText(\"Dashboard\") directly - use more specific role-based selectors instead.",
-          "waitTime": null
-        }
-      ],
-      "timestamp": "2025-09-09T20:06:41.560Z"
-    },
-    "createdAt": "2025-09-09T20:06:41.561Z",
-    "updatedAt": "2025-09-09T20:06:41.561Z"
-  },
-  {
     "_id": "1119072c-fedf-4ad9-be90-6a19367a4868",
     "title": "API -test",
     "description": "test",

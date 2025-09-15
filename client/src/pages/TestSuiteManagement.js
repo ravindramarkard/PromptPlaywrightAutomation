@@ -2330,6 +2330,10 @@ const TestSuiteManagement = () => {
         }}
         test={selectedTest}
         specContent={specContent}
+        onEdit={handleEditTest}
+        onSave={(newContent) => {
+          setSpecContent(newContent);
+        }}
       />
 
       {/* Edit Spec Modal */}

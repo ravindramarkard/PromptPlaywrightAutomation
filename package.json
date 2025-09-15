@@ -8,11 +8,14 @@
     "server": "cd server && npm run dev",
     "client": "cd client && npm start",
     "build": "cd client && npm run build",
-    "test": "cd server && npm test",
-    "test:playwright": "cd server && npx playwright test",
+    "test": "node scripts/run-tests-with-allure.js",
+    "test:playwright": "node scripts/run-tests-with-allure.js",
+    "test:playwright-only": "npx playwright test",
     "test:report": "cd server && npx allure serve allure-results",
     "test:results": "node scripts/get-latest-results.js",
-    "test:refresh-reports": "node scripts/refresh-reports.js"
+    "test:refresh-reports": "node scripts/refresh-reports.js",
+    "test:auto-allure": "node scripts/post-test-allure.js",
+    "test:with-allure": "node scripts/run-tests-with-allure.js"
   },
   "keywords": [
     "testing",
@@ -24,6 +27,7 @@
   "author": "Ravindra Markard",
   "license": "Ravindra Markard",
   "devDependencies": {
+    "@faker-js/faker": "^10.0.0",
     "@playwright/test": "^1.40.0",
     "allure-commandline": "^2.24.0",
     "allure-playwright": "^3.3.3",

@@ -114,7 +114,7 @@ async function getStatsFromReports() {
     
     try {
       const playwrightContent = await fs.readFile(playwrightReportPath, 'utf8');
-      const playwrightStats = parsePlaywrightReport(playwrightContent);
+      const playwrightStats = await parsePlaywrightReport(playwrightContent);
       if (playwrightStats && playwrightStats.totalTests > 0) {
         console.log('📊 Using Playwright report data:', playwrightStats);
         return playwrightStats;
@@ -133,14 +133,15 @@ async function getStatsFromReports() {
 // Parse Allure report HTML to extract statistics
 function parseAllureReport(htmlContent) {
   try {
-    // Look for summary section with statistics
-    const summaryMatch = htmlContent.match(/<strong>Total:<\/strong>\s*(\d+).*?<strong class="passed">Passed:<\/strong>\s*(\d+).*?<strong class="failed">Failed:<\/strong>\s*(\d+)/s);
+    // Look for summary section with statistics including skipped tests and success rate
+    const summaryMatch = htmlContent.match(/<strong>Total:<\/strong>\s*(\d+).*?<strong class="passed">Passed:<\/strong>\s*(\d+).*?<strong class="failed">Failed:<\/strong>\s*(\d+).*?<strong class="skipped">Skipped:<\/strong>\s*(\d+).*?<strong class="success-rate">Success Rate:<\/strong>\s*(\d+)%/s);
     
     if (summaryMatch) {
       const totalTests = parseInt(summaryMatch[1]);
       const passed = parseInt(summaryMatch[2]);
       const failed = parseInt(summaryMatch[3]);
-      const successRate = totalTests > 0 ? Math.round((passed / totalTests) * 100) : 0;
+      const skipped = parseInt(summaryMatch[4]);
+      const successRate = parseInt(summaryMatch[5]);
       
       // Parse individual test data for detailed analysis - improved regex
       const testRows = htmlContent.match(/<tr>\s*<td>([^<]+)<\/td>\s*<td class="([^"]+)">([^<]+)<\/td>\s*<td>([^<]+)<\/td>\s*<td>[\s\S]*?<\/td>\s*<\/tr>/g) || [];
@@ -173,7 +174,7 @@ function parseAllureReport(htmlContent) {
         passed,
         failed,
         running: 0,
-        skipped: statusDistribution.skipped || 0,
+        skipped: skipped,
         successRate,
         averageDuration: calculateAverageDuration(testDetails),
         statusDistribution,
@@ -191,61 +192,63 @@ function parseAllureReport(htmlContent) {
 }
 
 // Parse Playwright report HTML to extract statistics
-function parsePlaywrightReport(htmlContent) {
+async function parsePlaywrightReport(htmlContent) {
   try {
-    // Look for summary section with statistics
-    const summaryMatch = htmlContent.match(/<strong>Total:<\/strong>\s*(\d+).*?<strong class="passed">Passed:<\/strong>\s*(\d+).*?<strong class="failed">Failed:<\/strong>\s*(\d+)/s);
-    
-    if (summaryMatch) {
-      const totalTests = parseInt(summaryMatch[1]);
-      const passed = parseInt(summaryMatch[2]);
-      const failed = parseInt(summaryMatch[3]);
-      const successRate = totalTests > 0 ? Math.round((passed / totalTests) * 100) : 0;
-      
-      // Parse individual test data for detailed analysis - improved regex
-      const testRows = htmlContent.match(/<tr>\s*<td>([^<]+)<\/td>\s*<td class="([^"]+)">([^<]+)<\/td>\s*<td>([^<]+)<\/td>\s*<td>[\s\S]*?<\/td>\s*<\/tr>/g) || [];
-      
-      const testDetails = testRows.map(row => {
-        const match = row.match(/<tr>\s*<td>([^<]+)<\/td>\s*<td class="([^"]+)">([^<]+)<\/td>\s*<td>([^<]+)<\/td>/);
-        
-        if (match) {
-          return {
-            name: match[1],
-            status: match[3],
-            duration: parseDuration(match[4])
-          };
-        }
-        
-        return {
-          name: 'Unknown',
-          status: 'unknown',
-          duration: 0
-        };
-      });
-      
-      // Calculate detailed statistics
-      const statusDistribution = calculateStatusDistribution(testDetails);
-      const durationDistribution = calculateDurationDistribution(testDetails);
-      const severityDistribution = calculateSeverityDistribution(testDetails);
-      
-      return {
-        totalTests,
-        passed,
-        failed,
-        running: 0,
-        skipped: statusDistribution.skipped || 0,
-        successRate,
-        averageDuration: calculateAverageDuration(testDetails),
-        statusDistribution,
-        durationDistribution,
-        severityDistribution,
-        testDetails: testDetails.slice(0, 10) // Last 10 tests for recent activity
-      };
-    }
-    
-    return null;
+    // Since Playwright reports are React applications with embedded data,
+    // we'll try to extract data from the actual test results instead
+    return await getStatsFromTestResults();
   } catch (error) {
     console.log('⚠️ Error parsing Playwright report:', error.message);
+    return null;
+  }
+}
+
+// Get statistics from actual test results in the database/file system
+async function getStatsFromTestResults() {
+  try {
+    // Get test results from file storage
+    const testResults = await fileStorage.getTestResults();
+    
+    if (!testResults || testResults.length === 0) {
+      return null;
+    }
+    
+    // Calculate statistics from actual test data
+    const totalTests = testResults.length;
+    const passed = testResults.filter(test => test.status === 'passed').length;
+    const failed = testResults.filter(test => test.status === 'failed').length;
+    const skipped = testResults.filter(test => test.status === 'skipped').length;
+    const running = testResults.filter(test => test.status === 'running').length;
+    
+    const successRate = totalTests > 0 ? Math.round((passed / totalTests) * 100) : 0;
+    
+    // Transform test results for detailed analysis
+    const testDetails = testResults.map(test => ({
+      name: test.testName || 'Unknown Test',
+      status: test.status || 'unknown',
+      duration: test.results?.duration || 0
+    }));
+    
+    // Calculate detailed statistics
+    const statusDistribution = calculateStatusDistribution(testDetails);
+    const durationDistribution = calculateDurationDistribution(testDetails);
+    const severityDistribution = calculateSeverityDistribution(testDetails);
+    
+    return {
+      totalTests,
+      passed,
+      failed,
+      running,
+      skipped,
+      successRate,
+      averageDuration: calculateAverageDuration(testDetails),
+      statusDistribution,
+      durationDistribution,
+      severityDistribution,
+      testDetails: testDetails.slice(0, 10) // Last 10 tests for recent activity
+    };
+  } catch (error) {
+    console.log('⚠️ Error getting stats from test results:', error.message);
     return null;
   }
 }

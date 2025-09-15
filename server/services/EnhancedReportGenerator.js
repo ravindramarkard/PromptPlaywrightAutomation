@@ -236,13 +236,24 @@ class EnhancedReportGenerator {
       }
       
       try {
-        console.log('📊 Attempting Allure report generation...');
-        allureResult = await this.generateAllureReportWithCleanup();
-        console.log('✅ Allure report generated successfully');
+        console.log('📊 Auto-generating Allure report...');
+        // Check if allure-results directory exists
+        const allureResultsExists = await fs.access(this.allureResultsDir).then(() => true).catch(() => false);
+        
+        if (allureResultsExists) {
+          allureResult = await this.generateAllureReportWithCleanup();
+          console.log('✅ Allure report auto-generated successfully');
+        } else {
+          console.log('⚠️ No allure-results directory found, skipping Allure generation');
+          allureResult = { success: false, message: 'No test results available for Allure report' };
+        }
       } catch (error) {
-        console.log('⚠️ Allure report generation failed (this is expected if Allure is not installed):', error.message);
-        allureResult = { success: false, message: 'Allure not available - this is normal if Allure is not installed' };
+        console.log('⚠️ Allure report auto-generation failed:', error.message);
+        allureResult = { success: false, message: `Allure generation failed: ${error.message}` };
       }
+      
+      // Copy reports to the main reports directory for web serving
+      await this.copyReportsToMainDirectory();
       
       return {
         success: true,
@@ -256,6 +267,59 @@ class EnhancedReportGenerator {
         success: false,
         error: error.message
       };
+    }
+  }
+  
+  // Copy reports from services/reports to main reports directory
+  async copyReportsToMainDirectory() {
+    try {
+      console.log('📋 Copying reports to main directory for web serving...');
+      
+      const mainReportsDir = path.join(__dirname, '..', 'reports');
+      await fs.mkdir(mainReportsDir, { recursive: true });
+      
+      // Copy all report directories
+      const reportTypes = ['allure', 'playwright', 'api'];
+      
+      for (const reportType of reportTypes) {
+        const sourceDir = path.join(this.reportsDir, reportType);
+        const targetDir = path.join(mainReportsDir, reportType);
+        
+        try {
+          // Check if source directory exists
+          await fs.access(sourceDir);
+          
+          // Create target directory
+          await fs.mkdir(targetDir, { recursive: true });
+          
+          // Copy all files recursively
+          await this.copyDirectoryRecursive(sourceDir, targetDir);
+          console.log(`✅ Copied ${reportType} reports to main directory`);
+        } catch (error) {
+          console.log(`⚠️ Could not copy ${reportType} reports:`, error.message);
+        }
+      }
+      
+      console.log('✅ Reports copied to main directory successfully');
+    } catch (error) {
+      console.error('Error copying reports to main directory:', error);
+    }
+  }
+  
+  // Helper method to copy directory recursively
+  async copyDirectoryRecursive(source, target) {
+    const entries = await fs.readdir(source, { withFileTypes: true });
+    
+    for (const entry of entries) {
+      const sourcePath = path.join(source, entry.name);
+      const targetPath = path.join(target, entry.name);
+      
+      if (entry.isDirectory()) {
+        await fs.mkdir(targetPath, { recursive: true });
+        await this.copyDirectoryRecursive(sourcePath, targetPath);
+      } else {
+        await fs.copyFile(sourcePath, targetPath);
+      }
     }
   }
 }

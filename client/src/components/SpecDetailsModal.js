@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import styled from 'styled-components';
-import { FiX, FiCopy, FiDownload, FiCode, FiFileText } from 'react-icons/fi';
+import { FiX, FiCopy, FiDownload, FiCode, FiFileText, FiSave, FiEdit3 } from 'react-icons/fi';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { toast } from 'react-toastify';
@@ -208,7 +208,102 @@ const EmptyDescription = styled.p`
   margin: 0;
 `;
 
-const SpecDetailsModal = ({ isOpen, onClose, test, specContent }) => {
+const EditTextAreaContainer = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  background: #1d1f21;
+  color: #c5c8c6;
+`;
+
+const LineNumbers = styled.div`
+  background: #1d1f21;
+  color: #969896;
+  padding: 16px 8px 16px 16px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: right;
+  user-select: none;
+  border-right: 1px solid #373b41;
+  min-width: 50px;
+  white-space: pre;
+  overflow: hidden;
+  flex-shrink: 0;
+`;
+
+const EditTextArea = styled.textarea`
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 16px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  background: #1d1f21;
+  color: #c5c8c6;
+  resize: none;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+  
+  &:focus {
+    background: #1d1f21;
+    box-shadow: inset 0 0 0 2px #3498db;
+  }
+`;
+
+const SaveButton = styled(ActionButton)`
+  background: #27ae60;
+  border-color: #27ae60;
+  
+  &:hover {
+    background: #229954;
+    border-color: #229954;
+  }
+`;
+
+const CancelButton = styled(ActionButton)`
+  background: #e74c3c;
+  border-color: #e74c3c;
+  
+  &:hover {
+    background: #c0392b;
+    border-color: #c0392b;
+  }
+`;
+
+const SpecDetailsModal = ({ isOpen, onClose, test, specContent, onEdit, onSave }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const textareaRef = useRef(null);
+  const lineNumbersRef = useRef(null);
+
+  const lineNumbers = useMemo(() => {
+    const lines = editedContent.split('\n').length;
+    return Array.from({ length: lines }, (_, i) => i + 1).join('\n');
+  }, [editedContent]);
+
+  useEffect(() => {
+    if (specContent) {
+      setEditedContent(specContent);
+    }
+  }, [specContent]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsEditing(false);
+      setEditedContent('');
+    }
+  }, [isOpen]);
+
+  const handleScroll = (e) => {
+    if (lineNumbersRef.current) {
+      lineNumbersRef.current.scrollTop = e.target.scrollTop;
+    }
+  };
+
   if (!isOpen || !test) return null;
 
   const handleCopyCode = () => {
@@ -231,6 +326,62 @@ const SpecDetailsModal = ({ isOpen, onClose, test, specContent }) => {
       URL.revokeObjectURL(url);
       toast.success('Spec file downloaded');
     }
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleSave = async () => {
+    if (!editedContent.trim()) {
+      toast.error('Content cannot be empty');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Import api here to avoid circular dependencies
+      const api = (await import('../config/axios')).default;
+      
+      let endpoint;
+      let payload;
+      
+      // Determine the correct endpoint based on test type
+      if (test.isRealFile) {
+        endpoint = `/test-files/${test.id}/content`;
+        payload = { content: editedContent };
+      } else if (test.testSuiteId || test.suiteId) {
+        endpoint = `/test-suites/${test.testSuiteId || test.suiteId}/spec`;
+        payload = { specContent: editedContent };
+      } else if (test.promptId) {
+        endpoint = `/prompts/${test.promptId}`;
+        payload = { specContent: editedContent };
+      } else {
+        // Fallback endpoint
+        endpoint = `/test-files/${test.id}/content`;
+        payload = { content: editedContent };
+      }
+      
+      await api.put(endpoint, payload);
+      
+      toast.success('Spec content saved successfully');
+      setIsEditing(false);
+      
+      // Call onSave callback if provided to refresh the content
+      if (onSave) {
+        onSave(editedContent);
+      }
+    } catch (error) {
+      console.error('Error saving spec content:', error);
+      toast.error('Failed to save spec content');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditedContent(specContent || '');
+    setIsEditing(false);
   };
 
   const formatFileSize = (bytes) => {
@@ -308,31 +459,65 @@ const SpecDetailsModal = ({ isOpen, onClose, test, specContent }) => {
                     {test.testName || 'test'}.spec.ts
                   </div>
                   <CodeActions>
-                    <ActionButton onClick={handleCopyCode}>
-                      <FiCopy />
-                      Copy
-                    </ActionButton>
-                    <ActionButton onClick={handleDownloadCode}>
-                      <FiDownload />
-                      Download
-                    </ActionButton>
+                    {!isEditing ? (
+                      <>
+                        <ActionButton onClick={handleCopyCode}>
+                          <FiCopy />
+                          Copy
+                        </ActionButton>
+                        <ActionButton onClick={handleDownloadCode}>
+                          <FiDownload />
+                          Download
+                        </ActionButton>
+                        <ActionButton onClick={handleEdit}>
+                          <FiEdit3 />
+                          Edit
+                        </ActionButton>
+                      </>
+                    ) : (
+                      <>
+                        <CancelButton onClick={handleCancel}>
+                          <FiX />
+                          Cancel
+                        </CancelButton>
+                        <SaveButton onClick={handleSave} disabled={isSaving}>
+                          <FiSave />
+                          {isSaving ? 'Saving...' : 'Save'}
+                        </SaveButton>
+                      </>
+                    )}
                   </CodeActions>
                 </CodeHeader>
                 <CodeBlock>
-                  <SyntaxHighlighter
-                    language="typescript"
-                    style={tomorrow}
-                    customStyle={{
-                      margin: 0,
-                      fontSize: '13px',
-                      lineHeight: '1.5',
-                      background: 'transparent'
-                    }}
-                    showLineNumbers
-                    wrapLines
-                  >
-                    {specContent}
-                  </SyntaxHighlighter>
+                  {isEditing ? (
+                    <EditTextAreaContainer>
+                      <LineNumbers ref={lineNumbersRef}>
+                        {lineNumbers}
+                      </LineNumbers>
+                      <EditTextArea
+                        ref={textareaRef}
+                        value={editedContent}
+                        onChange={(e) => setEditedContent(e.target.value)}
+                        onScroll={handleScroll}
+                        placeholder="Enter your Playwright test code here..."
+                      />
+                    </EditTextAreaContainer>
+                  ) : (
+                    <SyntaxHighlighter
+                      language="typescript"
+                      style={tomorrow}
+                      customStyle={{
+                        margin: 0,
+                        fontSize: '13px',
+                        lineHeight: '1.5',
+                        background: 'transparent'
+                      }}
+                      showLineNumbers
+                      wrapLines
+                    >
+                      {specContent}
+                    </SyntaxHighlighter>
+                  )}
                 </CodeBlock>
               </>
             ) : (
